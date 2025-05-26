@@ -143,8 +143,7 @@ class ChatBot:
                 reason = registration_analysis.get("reason", "")
                 
                 bot_response += f"\n\n💡 **새로운 업무 지식 등록 제안**\n"
-                bot_response += f"{reason}\n"
-                bot_response += f"이 내용을 {'이슈' if suggestion_type == 'issue' else '매뉴얼'} 업무 지식으로 등록하시겠습니까?"
+                bot_response += f"{reason} 이 내용을 {'이슈' if suggestion_type == 'issue' else '매뉴얼'} 업무 지식으로 등록하시겠습니까?"
                 # Add marker for UI to show knowledge registration buttons
                 bot_response += "|KNOWLEDGE_BUTTONS"
             
@@ -257,7 +256,12 @@ class ChatBot:
                     "reason": "새로운 매뉴얼이 필요한 내용으로 보입니다."
                 }
             
-            return {"should_suggest": False, "reason": "general_question"}
+            # 일반적인 질문의 경우에도 지식 등록 제안
+            return {
+                "should_suggest": True,
+                "type": "issue", 
+                "reason": "새로운 이슈로 보이며, 관련 업무 지식이 충분하지 않습니다."
+            }
             
         except Exception as e:
             logger.error(f"Failed to analyze knowledge registration need: {e}")
