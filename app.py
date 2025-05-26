@@ -1328,13 +1328,22 @@ elif page == "👤 나의 정보":
                     st.markdown(f"**총 {len(user_contributions)}개의 업무 지식을 등록했습니다.**")
                     for knowledge in user_contributions:
                         knowledge_id, title, content, keywords, knowledge_type, view_count, created_at = knowledge
-                        # 클릭 가능한 업무 지식 항목
-                        if st.button(f"📄 {title} ({knowledge_type} | 조회수: {view_count}회)", 
-                                   key=f"knowledge_{knowledge_id}", 
-                                   help="클릭하여 상세보기로 이동"):
-                            st.session_state.current_page = "🔍 업무 지식 조회"
-                            st.session_state.selected_knowledge_id = knowledge_id
-                            st.rerun()
+                        # 클릭 가능한 업무 지식 항목 with expandable content
+                        with st.expander(f"📄 {title} ({knowledge_type} | 조회수: {view_count}회)", expanded=False):
+                            st.markdown(f"**구분:** {knowledge_type}")
+                            st.markdown(f"**전체 내용:**")
+                            st.markdown(content)
+                            if keywords:
+                                keywords_list = keywords.split(',')
+                                st.markdown(f"**키워드:** {' '.join([f'#{kw.strip()}' for kw in keywords_list])}")
+                            st.markdown(f"**조회수:** {view_count}회")
+                            st.markdown(f"**등록일:** {created_at}")
+                            
+                            # 상세보기 페이지로 이동 버튼 (수정 등을 위해)
+                            if st.button("🔍 수정/관리하기", key=f"manage_knowledge_{knowledge_id}"):
+                                st.session_state.current_page = "🔍 업무 지식 조회"
+                                st.session_state.selected_knowledge_id = knowledge_id
+                                st.rerun()
                 else:
                     st.info("아직 등록한 업무 지식이 없습니다.")
             except Exception as e:
@@ -1367,6 +1376,16 @@ elif page == "👤 나의 정보":
                 """, (user_id,))
                 recent_questions = cursor.fetchall()
                 
+                # 최근 답변들
+                cursor.execute("""
+                    SELECT a.id, a.content, a.created_at, q.id as question_id, q.title as question_title
+                    FROM qna_answers a
+                    JOIN qna_board q ON a.question_id = q.id
+                    WHERE a.author_id = %s 
+                    ORDER BY a.created_at DESC LIMIT 5
+                """, (user_id,))
+                recent_answers = cursor.fetchall()
+                
                 cursor.close()
                 conn.close()
                 
@@ -1376,19 +1395,36 @@ elif page == "👤 나의 정보":
                 with col2:
                     st.metric("작성한 답변", f"{answer_count}개")
                 
-                if recent_questions:
-                    st.markdown("### 📝 최근 등록한 질문")
-                    for question_id, question_title, created_at in recent_questions:
-                        # 클릭 가능한 질문 항목
-                        if st.button(f"❓ {question_title} ({created_at.strftime('%Y-%m-%d')})", 
-                                   key=f"question_{question_id}", 
-                                   help="클릭하여 질문 상세보기로 이동"):
-                            st.session_state.current_page = "❓ QnA 게시판"
-                            st.session_state.qna_selected_question = question_id
-                            st.session_state.selected_question_id = question_id
-                            st.rerun()
-                else:
-                    st.info("아직 등록한 질문이 없습니다.")
+                # 두 개의 탭으로 분리
+                qna_tab1, qna_tab2 = st.tabs(["📝 최근 등록한 질문", "💬 최근 작성한 답변"])
+                
+                with qna_tab1:
+                    if recent_questions:
+                        for question_id, question_title, created_at in recent_questions:
+                            # 클릭 가능한 질문 항목
+                            if st.button(f"❓ {question_title} ({created_at.strftime('%Y-%m-%d')})", 
+                                       key=f"question_{question_id}", 
+                                       help="클릭하여 질문 상세보기로 이동"):
+                                st.session_state.current_page = "QnA 질문 상세"
+                                st.session_state.selected_question_id = question_id
+                                st.rerun()
+                    else:
+                        st.info("아직 등록한 질문이 없습니다.")
+                
+                with qna_tab2:
+                    if recent_answers:
+                        for answer_id, answer_content, answer_created_at, question_id, question_title in recent_answers:
+                            # 답변 내용 미리보기 (첫 50자)
+                            preview = answer_content[:50] + "..." if len(answer_content) > 50 else answer_content
+                            # 클릭 가능한 답변 항목
+                            if st.button(f"💬 {question_title}\n답변: {preview} ({answer_created_at.strftime('%Y-%m-%d')})", 
+                                       key=f"answer_{answer_id}", 
+                                       help="클릭하여 해당 질문 상세보기로 이동"):
+                                st.session_state.current_page = "QnA 질문 상세"
+                                st.session_state.selected_question_id = question_id
+                                st.rerun()
+                    else:
+                        st.info("아직 작성한 답변이 없습니다.")
                     
             except Exception as e:
                 st.error(f"QnA 활동 정보를 불러오는 중 오류가 발생했습니다: {e}")
