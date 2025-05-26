@@ -546,8 +546,11 @@ class DatabaseManager:
             conn.commit()
             cursor.close()
             conn.close()
+            logger.info(f"QnA question added successfully with ID: {question_id}")
             return question_id
         except Exception as e:
+            logger.error(f"Failed to add QnA question: {e}")
+            print(f"QnA 질문 등록 오류: {e}")  # 디버깅용
             return None
     
     def get_qna_questions(self, category=None, question_type=None):

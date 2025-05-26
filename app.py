@@ -295,7 +295,8 @@ if "show_account_settings" in st.session_state and st.session_state.show_account
         current_department = ""
     
     with st.form("account_update_form"):
-        st.markdown(f"**계정 아이디:** {user[1] if isinstance(user, (list, tuple)) and len(user) > 1 else '사용자'} (변경 불가)")
+        username = user[1] if user and isinstance(user, (list, tuple)) and len(user) > 1 else '사용자'
+        st.markdown(f"**계정 아이디:** {username} (변경 불가)")
         
         new_name = st.text_input("이름", value=current_name, placeholder="새로운 이름을 입력하세요")
         new_password = st.text_input("새 비밀번호", type="password", placeholder="새 비밀번호를 입력하세요 (변경하지 않으려면 비워두세요)")
@@ -724,6 +725,10 @@ elif page == "❓ QnA 게시판":
     # Tabs for different actions
     tab1, tab2 = st.tabs(["📋 질문 목록", "❓ 새 질문 등록"])
     
+    # 질문 등록 후 자동으로 질문 목록 탭으로 이동
+    if st.session_state.get('qna_tab') == 0:
+        st.session_state.qna_tab = None  # 리셋
+    
     with tab1:
         # Filter options
         col1, col2 = st.columns(2)
@@ -732,10 +737,17 @@ elif page == "❓ QnA 게시판":
         with col2:
             type_filter = st.selectbox("질문 유형", ["전체", "issue", "manual"])
         
+        # Refresh button for debugging
+        if st.button("🔄 질문 목록 새로고침", key="refresh_qna"):
+            st.rerun()
+        
         # Get filtered questions
         category = None if category_filter == "전체" else category_filter
         question_type = None if type_filter == "전체" else type_filter
         questions = st.session_state.db_manager.get_qna_questions(category, question_type)
+        
+        # 디버깅 정보 표시
+        st.info(f"조회된 질문 수: {len(questions) if questions else 0}개")
         
         if questions:
             for question in questions:
@@ -792,14 +804,18 @@ elif page == "❓ QnA 게시판":
                         )
                         if question_id:
                             st.success("✅ 질문이 성공적으로 등록되었습니다! (+2 경험치)")
+                            st.info(f"질문 ID: {question_id} 로 등록되었습니다.")
                             # 미리 채워진 질문 정보 제거
                             if 'qna_question' in st.session_state:
                                 del st.session_state['qna_question']
                             if 'qna_type' in st.session_state:
                                 del st.session_state['qna_type']
+                            # 잠시 기다린 후 질문 목록 탭으로 이동
+                            st.session_state.qna_tab = 0  # 첫 번째 탭으로 이동
                             st.rerun()
                         else:
-                            st.error("질문 등록에 실패했습니다.")
+                            st.error("❌ 질문 등록에 실패했습니다. 다시 시도해주세요.")
+                            st.error("디버깅: 사용자 ID나 데이터베이스 연결에 문제가 있을 수 있습니다.")
                     else:
                         st.error("로그인이 필요합니다.")
                 else:
