@@ -124,6 +124,13 @@ class ChatBot:
                 
                 # Don't suggest knowledge registration for perfect matches
                 registration_analysis["should_suggest"] = False
+            else:
+                # If not all matches are perfect, always suggest knowledge registration
+                registration_analysis["should_suggest"] = True
+                if not registration_analysis.get("reason"):
+                    registration_analysis["reason"] = "새로운 업무 지식으로 등록하여 팀원들과 공유하시겠습니까?"
+                if not registration_analysis.get("type"):
+                    registration_analysis["type"] = "issue"
             
             # Add knowledge registration suggestion if needed (only if not perfect matches)
             if registration_analysis.get("should_suggest", False) and not has_perfect_matches:
@@ -132,7 +139,9 @@ class ChatBot:
                 
                 bot_response += f"\n\n💡 **새로운 업무 지식 등록 제안**\n"
                 bot_response += f"{reason}\n"
-                bot_response += f"이 내용을 {'이슈' if suggestion_type == 'issue' else '매뉴얼'} 업무 지식으로 등록하시겠습니까?\n\n"
+                bot_response += f"이 내용을 {'이슈' if suggestion_type == 'issue' else '매뉴얼'} 업무 지식으로 등록하시겠습니까?"
+                # Add marker for UI to show knowledge registration buttons
+                bot_response += "|KNOWLEDGE_BUTTONS"
             
             # Save chat interaction to database
             try:
