@@ -41,6 +41,10 @@ class ChatBot:
     
     def get_response(self, user_message: str) -> str:
         """Generate response for user message using RAG and LLM"""
+        return self.get_response_with_context(user_message, [])
+    
+    def get_response_with_context(self, user_message: str, conversation_context: list) -> str:
+        """Generate response for user message using RAG, LLM and conversation context"""
         try:
             # Get relevant context from RAG engine
             context, related_issues = self.rag_engine.get_context_for_query(user_message)
@@ -56,11 +60,19 @@ class ChatBot:
             else:
                 context_prompt = "기존 이슈 데이터베이스에서 직접적으로 관련된 정보를 찾지 못했습니다. 일반적인 IT 지식을 바탕으로 답변해주세요."
             
-            # Prepare messages for OpenAI API
-            messages = [
-                {"role": "system", "content": self.system_prompt},
-                {"role": "user", "content": f"{context_prompt}\n\n사용자 질문: {user_message}"}
-            ]
+            # Prepare messages for OpenAI API with conversation history
+            messages = [{"role": "system", "content": self.system_prompt}]
+            
+            # Add previous conversation context (last 5 exchanges)
+            for exchange in conversation_context[-5:]:
+                messages.append({"role": "user", "content": exchange["user"]})
+                messages.append({"role": "assistant", "content": exchange["assistant"]})
+            
+            # Add current message with context
+            messages.append({
+                "role": "user", 
+                "content": f"{context_prompt}\n\n사용자 질문: {user_message}"
+            })
             
             # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
             # do not change this unless explicitly requested by the user
@@ -72,6 +84,10 @@ class ChatBot:
             )
             
             bot_response = response.choices[0].message.content
+            
+            # Add conversation continuity indicator if there's previous context
+            if conversation_context:
+                bot_response = f"💭 *이전 대화를 기억하며 답변드립니다*\n\n{bot_response}"
             
             # Add related issues information to response if available
             if related_issues:

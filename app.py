@@ -83,6 +83,9 @@ if 'chatbot' not in st.session_state:
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 
+if 'conversation_context' not in st.session_state:
+    st.session_state.conversation_context = []
+
 # Main header with logo and branding
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
@@ -116,24 +119,65 @@ if page == "💬 대화하기":
     # Chat interface
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
     
+    # Chat history management buttons
+    col1, col2, col3 = st.columns([2, 1, 1])
+    with col2:
+        if st.button("🗑️ 대화 기록 삭제"):
+            st.session_state.chat_history = []
+            st.session_state.conversation_context = []
+            st.rerun()
+    with col3:
+        if st.button("💾 대화 기록 저장"):
+            if st.session_state.chat_history:
+                # Save conversation to database
+                conversation_summary = f"대화 {len(st.session_state.chat_history)}개 메시지"
+                for user_msg, bot_msg in st.session_state.chat_history:
+                    st.session_state.db_manager.save_chat_history(user_msg, bot_msg)
+                st.success("대화 기록이 저장되었습니다!")
+    
     # Display chat history
-    for i, (user_msg, bot_msg) in enumerate(st.session_state.chat_history):
-        with st.container():
-            st.markdown(f"**👤 사용자:** {user_msg}")
-            st.markdown(f"**🤖 물어보SHOO:** {bot_msg}")
-            st.markdown("---")
+    if st.session_state.chat_history:
+        st.markdown("### 💬 대화 내역")
+        for i, (user_msg, bot_msg) in enumerate(st.session_state.chat_history):
+            with st.container():
+                st.markdown(f"**👤 사용자:** {user_msg}")
+                st.markdown(f"**🤖 물어보SHOO:** {bot_msg}")
+                if i < len(st.session_state.chat_history) - 1:
+                    st.markdown("---")
+        st.markdown("---")
+    else:
+        st.info("💡 새로운 대화를 시작해보세요! 이전 대화 내역이 기억되어 연속적인 질문이 가능합니다.")
     
     # Chat input
     user_input = st.text_input("질문을 입력하세요:", key="chat_input", placeholder="예: 데이터베이스 서버가 느려질 때 어떻게 해야 하나요?")
     
-    col1, col2 = st.columns([1, 4])
+    col1, col2, col3 = st.columns([1, 3, 1])
     with col1:
         if st.button("전송", type="primary"):
             if user_input.strip():
                 with st.spinner("답변을 생성하고 있습니다..."):
-                    response = st.session_state.chatbot.get_response(user_input)
+                    # Add conversation context to the chatbot
+                    response = st.session_state.chatbot.get_response_with_context(
+                        user_input, 
+                        st.session_state.conversation_context
+                    )
+                    
+                    # Update conversation context
+                    st.session_state.conversation_context.append({
+                        "user": user_input,
+                        "assistant": response
+                    })
+                    
+                    # Limit context to last 5 exchanges to prevent token overflow
+                    if len(st.session_state.conversation_context) > 5:
+                        st.session_state.conversation_context = st.session_state.conversation_context[-5:]
+                    
                     st.session_state.chat_history.append((user_input, response))
                     st.rerun()
+    
+    # Show conversation stats
+    if st.session_state.chat_history:
+        st.markdown(f"**📊 현재 대화:** {len(st.session_state.chat_history)}개 메시지 | **🧠 기억 중인 대화:** {len(st.session_state.conversation_context)}개 교환")
     
     st.markdown('</div>', unsafe_allow_html=True)
 
