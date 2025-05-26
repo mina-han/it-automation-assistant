@@ -796,6 +796,7 @@ elif page == "❓ QnA 게시판":
                 
                 if card_clicked:
                     st.session_state.selected_question_id = q_id
+                    st.session_state.current_page = "QnA 질문 상세"
                     st.rerun()
                 
                 # 수정/삭제 버튼 (질문 작성자만) - 작은 버튼으로 표시
