@@ -295,7 +295,7 @@ if "show_account_settings" in st.session_state and st.session_state.show_account
         current_department = ""
     
     with st.form("account_update_form"):
-        st.markdown(f"**계정 아이디:** {user[1]} (변경 불가)")
+        st.markdown(f"**계정 아이디:** {user[1] if isinstance(user, (list, tuple)) and len(user) > 1 else '사용자'} (변경 불가)")
         
         new_name = st.text_input("이름", value=current_name, placeholder="새로운 이름을 입력하세요")
         new_password = st.text_input("새 비밀번호", type="password", placeholder="새 비밀번호를 입력하세요 (변경하지 않으려면 비워두세요)")
@@ -314,13 +314,18 @@ if "show_account_settings" in st.session_state and st.session_state.show_account
                     update_data['department'] = new_department
                 
                 if update_data:
-                    success = st.session_state.db_manager.update_user_info(user[0], **update_data)
+                    user_id = user[0] if isinstance(user, (list, tuple)) and len(user) > 0 else None
+                    if user_id:
+                        success = st.session_state.db_manager.update_user_info(user_id, **update_data)
+                    else:
+                        success = False
                     if success:
                         st.success("✅ 계정 정보가 성공적으로 업데이트되었습니다!")
                         # Refresh current user data
-                        updated_user = st.session_state.db_manager.get_user_by_id(user[0])
-                        if updated_user:
-                            st.session_state.current_user = updated_user
+                        if user_id:
+                            updated_user = st.session_state.db_manager.get_user_by_id(user_id)
+                            if updated_user:
+                                st.session_state.current_user = updated_user
                         st.session_state.show_account_settings = False
                         st.rerun()
                     else:
