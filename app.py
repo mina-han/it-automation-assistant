@@ -377,7 +377,23 @@ with col2:
     """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 with col3:
-    st.empty()  # 우측 상단은 비워둠
+    # 우측 상단 옵션 메뉴
+    with st.popover("⚙️", use_container_width=False):
+        st.markdown("### 계정 설정")
+        
+        if st.button("👤 내 계정 정보 변경", use_container_width=True):
+            st.session_state.show_account_settings = True
+            st.rerun()
+        
+        if st.button("🚪 로그아웃", use_container_width=True, type="secondary"):
+            # 로그아웃 처리
+            st.session_state.current_user = None
+            st.session_state.chat_history = []
+            st.session_state.conversation_context = []
+            st.session_state.current_page = "💬 대화하기"
+            st.session_state.show_account_settings = False
+            st.success("✅ 로그아웃되었습니다.")
+            st.rerun()
 
 # Modern Sidebar Navigation
 with st.sidebar:
