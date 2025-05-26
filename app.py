@@ -504,19 +504,21 @@ if page == "💬 대화하기":
                         
                         # QnA 등록 제안 UI 표시
                         st.markdown("---")
-                        st.markdown("### 💡 해당 질문을 QnA 게시판에 등록할까요?")
-                        st.markdown("다른 동료들이 이 질문에 답변해줄 수 있습니다!")
                         
                         col1, col2 = st.columns([1, 1])
                         with col1:
-                            if st.button("✅ 예", key=f"qna_register_yes_{len(st.session_state.chat_history)}", type="primary"):
+                            if st.button("✅ 예", key=f"qna_register_yes_{len(st.session_state.chat_history)}", type="primary", use_container_width=True):
                                 # QnA 게시판에 질문 등록
                                 if user_id:
                                     question_id = st.session_state.db_manager.add_qna_question_from_chat(
                                         user_input, user_id
                                     )
                                     if question_id:
-                                        st.success(f"✅ 질문이 QnA 게시판에 등록되었습니다! (질문 ID: {question_id})")
+                                        # 제목 생성 (앞 20자)
+                                        title = user_input[:20] + ('...' if len(user_input) > 20 else '')
+                                        st.success(f"✅ 질문이 QnA 게시판에 등록되었습니다!")
+                                        st.info(f"📝 제목: {title}")
+                                        st.info(f"📊 카테고리: 데이터베이스 | 유형: issue | 상태: 대기중")
                                         st.info("🎉 질문 등록으로 2점의 경험치를 획득했습니다!")
                                     else:
                                         st.error("❌ 질문 등록 중 오류가 발생했습니다.")
@@ -524,7 +526,7 @@ if page == "💬 대화하기":
                                     st.error("❌ 로그인이 필요합니다.")
                                 st.rerun()
                         with col2:
-                            if st.button("❌ 아니요", key=f"qna_register_no_{len(st.session_state.chat_history)}"):
+                            if st.button("❌ 아니오", key=f"qna_register_no_{len(st.session_state.chat_history)}", use_container_width=True):
                                 st.rerun()
                     else:
                         # 정상 응답일 때만 대화 내역에 저장

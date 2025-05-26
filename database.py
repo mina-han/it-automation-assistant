@@ -557,17 +557,20 @@ class DatabaseManager:
     
     # QnA Board functions
     def add_qna_question_from_chat(self, question_text, questioner_id):
-        """Add QnA question from chat suggestion with default values"""
+        """Add QnA question from chat suggestion with specified values"""
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
             kst_now = self._get_kst_now()
             
+            # Create title from first 20 characters of question
+            title = question_text[:20] + ('...' if len(question_text) > 20 else '')
+            
             cursor.execute("""
                 INSERT INTO qna_board (title, question, category, question_type, questioner_id, status, created_at)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
-            """, (question_text, question_text, "기타", "이슈", questioner_id, "대기중", kst_now))
+            """, (title, question_text, "데이터베이스", "issue", questioner_id, "대기중", kst_now))
             
             question_id = cursor.fetchone()[0]
             
