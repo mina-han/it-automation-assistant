@@ -18,25 +18,21 @@ class ChatBot:
         
         # System prompt for the chatbot
         self.system_prompt = """
-당신은 IT 실무자를 위한 전문적인 이슈 해결 도우미 '물어보SHOO'입니다.
+당신은 IT 실무자를 위한 업무 지식 도우미 '물어보SHOO'입니다.
 
-역할과 특징:
-- IT 인프라, 데이터베이스, 시스템 운영 관련 질문에 전문적으로 답변
-- 기존에 해결된 유사한 이슈들을 참고하여 구체적이고 실용적인 해결책 제시
-- 한국어로 친근하고 전문적인 톤으로 답변
-- 단계별로 명확한 해결 방법 제시
+핵심 원칙:
+- 저장된 업무 지식을 최우선으로 활용하여 답변
+- 등록된 가이드나 절차가 있다면 반드시 그 내용을 정확히 따라 안내
+- 저장된 지식의 단계별 절차를 순서대로 제시
+- 도구명, 버전, 설정값 등 구체적 정보를 정확히 전달
 
-답변 형식:
-1. 문제 상황 요약
-2. 가능한 원인 분석
-3. 해결 방법 (단계별)
-4. 예방책 또는 모니터링 방법
-5. 관련 유사 이슈 (있다면)
+답변 방식:
+1. 저장된 업무 지식이 있다면 그 내용을 기반으로 단계별 안내
+2. 각 단계를 번호를 매겨 명확하게 제시
+3. 구체적인 도구명, 명령어, 설정값 등을 정확히 포함
+4. 일반적인 IT 지식보다 저장된 지식을 우선 활용
 
-주의사항:
-- 제공된 컨텍스트 정보를 우선적으로 활용하되, 일반적인 IT 지식도 함께 활용
-- 불확실한 정보는 명시적으로 표시
-- 중요한 작업의 경우 백업이나 테스트 환경에서의 선행 테스트를 권장
+중요: 관련 업무 지식이 저장되어 있다면 반드시 그 가이드를 따라 답변하세요.
 """
     
     def get_response(self, user_message: str) -> str:
@@ -49,16 +45,20 @@ class ChatBot:
             # Get relevant context from RAG engine
             context, related_issues = self.rag_engine.get_context_for_query(user_message)
             
-            # Prepare the conversation context
+            # Prepare the conversation context with stronger emphasis on stored knowledge
             if related_issues:
                 context_prompt = f"""
-관련 이슈 정보:
+아래는 저장된 업무 지식 정보입니다. 이 정보를 최우선으로 활용하여 정확한 답변을 제공해주세요:
+
 {context}
 
-위의 정보를 참고하여 다음 질문에 답변해주세요.
+주의사항:
+1. 위 업무 지식에 관련 정보가 있다면 반드시 그 내용을 기반으로 답변하세요.
+2. 저장된 지식의 단계별 가이드가 있다면 그대로 따라서 설명해주세요.
+3. 일반적인 지식보다 저장된 업무 지식을 우선하여 답변하세요.
 """
             else:
-                context_prompt = "기존 이슈 데이터베이스에서 직접적으로 관련된 정보를 찾지 못했습니다. 일반적인 IT 지식을 바탕으로 답변해주세요."
+                context_prompt = "저장된 업무 지식에서 직접 관련된 정보를 찾지 못했습니다. 일반적인 IT 지식을 바탕으로 도움을 드리겠습니다."
             
             # Prepare messages for OpenAI API with conversation history
             messages = [{"role": "system", "content": self.system_prompt}]

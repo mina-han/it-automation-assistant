@@ -52,12 +52,23 @@ class RAGEngine:
                 union = query_words.union(all_words)
                 similarity = len(intersection) / len(union) if union else 0
                 
-                # Boost similarity if keywords match
+                # Boost similarity for title matches (높은 가중치)
+                for query_word in query_words:
+                    if query_word in title.lower():
+                        similarity += 0.3
+                
+                # Boost similarity if keywords match (높은 가중치)
                 if keywords:
                     keyword_list = [kw.strip().lower() for kw in keywords.split(',')]
                     for kw in keyword_list:
-                        if any(word in kw or kw in word for word in query_words):
-                            similarity += 0.2
+                        for query_word in query_words:
+                            if query_word in kw or kw in query_word:
+                                similarity += 0.4
+                
+                # Boost similarity for exact phrase matches in content
+                query_phrase = query_lower
+                if query_phrase in content.lower():
+                    similarity += 0.5
                 
                 similarities.append((knowledge_id, title, content, min(similarity, 1.0)))
             
