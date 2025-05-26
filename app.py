@@ -93,16 +93,14 @@ col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     st.markdown('<div class="mascot-header">', unsafe_allow_html=True)
     
-    # Display logo
-    try:
-        with open("assets/logo.svg", "r", encoding="utf-8") as f:
-            logo_svg = f.read()
-        st.markdown(f'<div style="width: 150px; margin: 0 auto; margin-bottom: 10px;">{logo_svg}</div>', unsafe_allow_html=True)
-    except:
-        st.markdown('<div style="font-size: 4rem; text-align: center; color: #B5A081;">🔍</div>', unsafe_allow_html=True)
-    
-    st.markdown('<div class="main-title">물어보<br>SHOO</div>', unsafe_allow_html=True)
-    st.markdown('<div class="subtitle">IT 실무자를 위한 자연어 이슈 검색/기록 도우미</div>', unsafe_allow_html=True)
+    # Display logo with SHOO character
+    st.markdown("""
+    <div style="text-align: center; margin-bottom: 20px;">
+        <div style="font-size: 3rem; margin-bottom: 10px;">🦊</div>
+        <div style="font-size: 2.5rem; font-weight: bold; color: #B5A081; margin-bottom: 5px;">물어보 SHOO</div>
+        <div style="font-size: 1rem; color: #888;">IT 실무자를 위한 자연어 이슈 검색/기록 도우미</div>
+    </div>
+    """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # Sidebar navigation

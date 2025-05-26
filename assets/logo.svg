@@ -1,58 +1,51 @@
-<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background with soft gradient -->
-  <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#F8F6F3;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#F0EDE8;stop-opacity:1" />
-    </linearGradient>
-  </defs>
-  
-  <!-- Main background circle -->
-  <circle cx="60" cy="60" r="55" fill="url(#bg)" stroke="#B5A081" stroke-width="2"/>
-  
-  <!-- Korean text "물어보" styled like the image -->
-  <g transform="translate(20, 25)">
-    <!-- 물 character -->
-    <rect x="5" y="5" width="15" height="3" rx="1" fill="#B5A081"/>
-    <rect x="2" y="10" width="8" height="2" rx="1" fill="#B5A081"/>
-    <rect x="2" y="14" width="12" height="2" rx="1" fill="#B5A081"/>
-    <rect x="2" y="18" width="10" height="2" rx="1" fill="#B5A081"/>
+<svg width="140" height="100" viewBox="0 0 140 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- SHOO Character (inspired by Shinhan's SHOO) -->
+  <g transform="translate(10, 20)">
+    <!-- Fox head -->
+    <ellipse cx="25" cy="30" rx="20" ry="25" fill="white" stroke="#333" stroke-width="2"/>
     
-    <!-- 어 character -->
-    <circle cx="35" cy="15" r="8" fill="none" stroke="#B5A081" stroke-width="3"/>
-    <rect x="47" y="8" width="3" height="14" rx="1" fill="#B5A081"/>
+    <!-- Fox ears -->
+    <path d="M 10 15 L 15 5 L 25 15 Z" fill="white" stroke="#333" stroke-width="2"/>
+    <path d="M 25 15 L 35 5 L 40 15 Z" fill="white" stroke="#333" stroke-width="2"/>
+    <path d="M 13 13 L 15 8 L 22 13 Z" fill="#FFB6C1"/>
+    <path d="M 28 13 L 35 8 L 37 13 Z" fill="#FFB6C1"/>
     
-    <!-- 보 character -->
-    <rect x="60" y="5" width="12" height="3" rx="1" fill="#B5A081"/>
-    <rect x="60" y="10" width="3" height="12" rx="1" fill="#B5A081"/>
-    <rect x="69" y="10" width="3" height="12" rx="1" fill="#B5A081"/>
-    <rect x="63" y="14" width="6" height="2" rx="1" fill="#B5A081"/>
+    <!-- Eyes -->
+    <circle cx="18" cy="25" r="2" fill="black"/>
+    <circle cx="32" cy="25" r="2" fill="black"/>
+    <circle cx="18.5" cy="24" r="0.5" fill="white"/>
+    <circle cx="32.5" cy="24" r="0.5" fill="white"/>
+    
+    <!-- Nose -->
+    <circle cx="25" cy="32" r="1.5" fill="black"/>
+    
+    <!-- Mouth -->
+    <path d="M 22 36 Q 25 38 28 36" stroke="black" stroke-width="1" fill="none"/>
+    
+    <!-- Computer/laptop -->
+    <rect x="15" y="45" width="20" height="12" rx="2" fill="#E8E8E8" stroke="#333" stroke-width="1"/>
+    <rect x="17" y="47" width="16" height="8" fill="#4A90E2"/>
+    <circle cx="25" cy="51" r="0.5" fill="white"/>
+    
+    <!-- Thinking bubbles -->
+    <circle cx="45" cy="20" r="2" fill="#FFB6C1" opacity="0.7"/>
+    <circle cx="50" cy="15" r="1.5" fill="#FFB6C1" opacity="0.5"/>
+    <circle cx="53" cy="12" r="1" fill="#FFB6C1" opacity="0.3"/>
   </g>
   
-  <!-- English text "SHOO" styled like the image -->
-  <g transform="translate(15, 55)">
-    <!-- S -->
-    <path d="M 5 5 Q 15 0 15 8 Q 15 12 5 12 Q 15 12 15 20 Q 15 25 5 20" 
-          fill="none" stroke="#B5A081" stroke-width="4" stroke-linecap="round"/>
-    
-    <!-- H -->
-    <line x1="25" y1="5" x2="25" y2="25" stroke="#B5A081" stroke-width="4" stroke-linecap="round"/>
-    <line x1="35" y1="5" x2="35" y2="25" stroke="#B5A081" stroke-width="4" stroke-linecap="round"/>
-    <line x1="25" y1="15" x2="35" y2="15" stroke="#B5A081" stroke-width="4" stroke-linecap="round"/>
-    
-    <!-- O -->
-    <circle cx="50" cy="15" r="10" fill="none" stroke="#B5A081" stroke-width="4"/>
-    
-    <!-- O -->
-    <circle cx="75" cy="15" r="10" fill="none" stroke="#B5A081" stroke-width="4"/>
+  <!-- Korean text "물어보" -->
+  <g transform="translate(65, 15)">
+    <text x="0" y="20" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#B5A081">물어보</text>
   </g>
   
-  <!-- Small decorative elements -->
-  <circle cx="25" cy="30" r="2" fill="#B5A081" opacity="0.6"/>
-  <circle cx="95" cy="35" r="2" fill="#B5A081" opacity="0.6"/>
-  <circle cx="30" cy="90" r="2" fill="#B5A081" opacity="0.6"/>
-  <circle cx="90" cy="85" r="2" fill="#B5A081" opacity="0.6"/>
+  <!-- English text "SHOO" -->
+  <g transform="translate(65, 45)">
+    <text x="0" y="25" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#B5A081">SHOO</text>
+  </g>
   
-  <!-- Subtle question mark in corner -->
-  <text x="95" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#B5A081" opacity="0.7">?</text>
+  <!-- Subtitle -->
+  <g transform="translate(65, 75)">
+    <text x="0" y="10" font-family="Arial, sans-serif" font-size="8" fill="#888">IT 실무자를 위한</text>
+    <text x="0" y="20" font-family="Arial, sans-serif" font-size="8" fill="#888">자연어 이슈 검색/기록 도우미</text>
+  </g>
 </svg>
