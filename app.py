@@ -464,25 +464,26 @@ if page == "💬 대화하기":
                     except Exception as e:
                         st.error(f"대화 저장 중 오류가 발생했습니다: {e}")
                     
-                    # 답변에 QnA 등록 제안 추가
+                    # 답변이 없을 때 QnA 등록 제안
                     if "저장된 업무 지식이 없습니다" in response or "관련 정보를 찾을 수 없습니다" in response:
                         st.markdown("---")
-                        st.markdown("### 💡 QnA 게시판에 등록하시겠습니까?")
-                        st.markdown("관련 업무 지식이 없어 정확한 답변을 드리지 못했습니다.")
+                        st.markdown("### 💡 QnA 게시판에 새로 등록하시겠습니까?")
+                        st.markdown("현재 저장된 업무 지식에 없는 내용입니다. QnA 게시판에 질문으로 등록하여 다른 동료들의 도움을 받아보세요!")
                         
-                        col1, col2, col3 = st.columns([1, 1, 2])
+                        col1, col2 = st.columns([1, 1])
                         with col1:
-                            if st.button("✅ 예 (이슈)", key=f"qna_yes_issue_{len(st.session_state.chat_history)}"):
-                                # 자동으로 QnA 질문 등록
+                            if st.button("✅ 예", key=f"qna_yes_{len(st.session_state.chat_history)}"):
+                                # QnA 질문으로 자동 등록
                                 user = st.session_state.get('current_user', None)
                                 if user and isinstance(user, (list, tuple)) and len(user) > 0:
                                     user_id = user[0]
-                                    question_title = f"이슈 문의: {user_input[:50]}..."
+                                    question_title = f"{user_input[:50]}{'...' if len(user_input) > 50 else ''}"
                                     question_id = st.session_state.db_manager.add_qna_question(
                                         question_title, user_input, "데이터베이스", "issue", user_id
                                     )
                                     if question_id:
-                                        st.success("✅ QnA 게시판에 이슈가 등록되었습니다!")
+                                        st.success("✅ QnA 게시판에 질문이 등록되었습니다! (+2 경험치)")
+                                        st.info("🎯 QnA 게시판에서 등록된 질문을 확인하세요!")
                                         st.session_state.current_page = "❓ QnA 게시판"
                                         st.rerun()
                                     else:
@@ -490,26 +491,8 @@ if page == "💬 대화하기":
                                 else:
                                     st.error("❌ 로그인이 필요합니다.")
                         with col2:
-                            if st.button("✅ 예 (메뉴얼)", key=f"qna_yes_manual_{len(st.session_state.chat_history)}"):
-                                # 자동으로 QnA 질문 등록
-                                user = st.session_state.get('current_user', None)
-                                if user and isinstance(user, (list, tuple)) and len(user) > 0:
-                                    user_id = user[0]
-                                    question_title = f"메뉴얼 문의: {user_input[:50]}..."
-                                    question_id = st.session_state.db_manager.add_qna_question(
-                                        question_title, user_input, "데이터베이스", "manual", user_id
-                                    )
-                                    if question_id:
-                                        st.success("✅ QnA 게시판에 메뉴얼 질문이 등록되었습니다!")
-                                        st.session_state.current_page = "❓ QnA 게시판"
-                                        st.rerun()
-                                    else:
-                                        st.error("❌ 질문 등록 중 오류가 발생했습니다.")
-                                else:
-                                    st.error("❌ 로그인이 필요합니다.")
-                        with col3:
                             if st.button("❌ 아니오", key=f"qna_no_{len(st.session_state.chat_history)}"):
-                                pass
+                                st.info("💬 다른 질문을 시도해보시거나 업무 지식 등록을 통해 정보를 추가해보세요!")
                     
                     st.session_state.chat_history.append((user_input, response))
                     st.rerun()

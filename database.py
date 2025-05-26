@@ -25,6 +25,14 @@ class DatabaseManager:
         else:
             self.database_url = None
     
+    def _hash_password(self, password: str) -> str:
+        """Hash password using SHA-256"""
+        return hashlib.sha256(password.encode('utf-8')).hexdigest()
+    
+    def _verify_password(self, password: str, hashed_password: str) -> bool:
+        """Verify password against hash"""
+        return self._hash_password(password) == hashed_password
+    
     def get_connection(self):
         """Create and return a database connection"""
         try:
@@ -401,15 +409,16 @@ class DatabaseManager:
     
     # User management methods
     def create_user(self, username, name, password, department):
-        """Create a new user"""
+        """Create a new user with SHA-256 encrypted password"""
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
+            hashed_password = self._hash_password(password)
             cursor.execute("""
                 INSERT INTO users (username, name, password, department)
                 VALUES (%s, %s, %s, %s)
                 RETURNING id
-            """, (username, name, password, department))
+            """, (username, name, hashed_password, department))
             user_id = cursor.fetchone()[0]
             conn.commit()
             cursor.close()
@@ -419,18 +428,23 @@ class DatabaseManager:
             raise e
     
     def authenticate_user(self, username, password):
-        """Authenticate user and return user data"""
+        """Authenticate user with SHA-256 password verification"""
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
+            # 먼저 사용자의 해시된 비밀번호를 가져옴
             cursor.execute("""
-                SELECT id, username, name, department, experience_points, level
-                FROM users WHERE username = %s AND password = %s
-            """, (username, password))
-            user = cursor.fetchone()
+                SELECT id, username, name, department, experience_points, level, password
+                FROM users WHERE username = %s
+            """, (username,))
+            user_data = cursor.fetchone()
             cursor.close()
             conn.close()
-            return user
+            
+            # 사용자가 존재하고 비밀번호가 맞는지 확인
+            if user_data and self._verify_password(password, user_data[6]):
+                return user_data[:6]  # 비밀번호 제외한 정보만 반환
+            return None
         except Exception as e:
             return None
     
