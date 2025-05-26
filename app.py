@@ -363,36 +363,7 @@ with col2:
     """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 with col3:
-    # 우측 상단 사용자 메뉴 (드롭다운 형태)
-    if hasattr(st.session_state, 'current_user') and st.session_state.current_user:
-        user = st.session_state.current_user
-        user_name = user[2] if len(user) > 2 else "사용자"
-        
-        # 사용자 정보 표시
-        st.markdown(f"""
-        <div style="text-align: right; margin-bottom: 10px;">
-            <div style="color: #666; font-size: 0.9em;">안녕하세요!</div>
-            <div style="color: #333; font-weight: bold;">{user_name}님</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # 드롭다운 메뉴
-        menu_option = st.selectbox(
-            "⋮", 
-            ["메뉴 선택", "⚙️ 계정 정보 변경", "🚪 로그아웃"],
-            key="user_menu_dropdown",
-            label_visibility="collapsed"
-        )
-        
-        # 메뉴 선택에 따른 동작
-        if menu_option == "⚙️ 계정 정보 변경":
-            st.session_state.show_account_settings = True
-            st.rerun()
-        elif menu_option == "🚪 로그아웃":
-            st.session_state.current_user = None
-            st.session_state.show_account_settings = False
-            st.session_state.current_page = "💬 대화하기"
-            st.rerun()
+    st.empty()  # 우측 상단은 비워둠
 
 # Modern Sidebar Navigation
 with st.sidebar:
@@ -422,6 +393,22 @@ with st.sidebar:
         ):
             st.session_state.current_page = item["value"]
             st.rerun()
+    
+    # 사용자 정보를 사이드바 하단에 표시
+    st.markdown("---")
+    if hasattr(st.session_state, 'current_user') and st.session_state.current_user:
+        user = st.session_state.current_user
+        user_name = user[2] if len(user) > 2 else "사용자"
+        department = user[3] if len(user) > 3 else "부서 없음"
+        
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    padding: 15px; border-radius: 10px; margin: 10px 0; color: white;">
+            <div style="font-size: 0.9em; margin-bottom: 5px;">로그인된 사용자</div>
+            <div style="font-weight: bold; font-size: 1.1em;">{user_name}님</div>
+            <div style="font-size: 0.8em; opacity: 0.8;">{department}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
 page = st.session_state.current_page
 
@@ -810,60 +797,55 @@ elif page == "❓ QnA 게시판":
                     st.write(f"데이터: {question}")
                     continue
                 
-                # Question card
-                with st.container():
-                    st.markdown(f"""
-                    <div style="background: white; padding: 15px; border-radius: 10px; margin: 10px 0; 
-                                border-left: 4px solid #2196F3; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <h4 style="color: #1976D2; margin: 0 0 10px 0;">{title}</h4>
-                        <p style="color: #666; margin: 5px 0;"><strong>카테고리:</strong> {category} | <strong>유형:</strong> {q_type}</p>
-                        <p style="color: #666; margin: 5px 0;"><strong>질문자:</strong> {questioner_name} | <strong>답변 수:</strong> {answer_count}</p>
-                        <p style="color: #888; font-size: 0.9em; margin: 5px 0;">{created_at.strftime('%Y-%m-%d %H:%M')}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                # 클릭 가능한 질문 카드 (hover 효과 포함)
+                card_clicked = st.button(
+                    f"""
+                    {title}
                     
-                    col1, col2, col3 = st.columns([2, 1, 1])
-                    with col1:
-                        if st.button(f"답변 보기/작성", key=f"view_q_{q_id}"):
-                            st.session_state.selected_question_id = q_id
-                            st.rerun()
-                    
-                    # 수정/삭제 버튼 (질문 작성자만)
-                    current_user = st.session_state.get('current_user', None)
-                    if current_user and len(current_user) > 0:
-                        current_user_id = current_user[0]
-                        # 질문자 ID 가져오기
-                        question_data = st.session_state.db_manager.get_qna_questions()
-                        if question_data:
-                            for q in question_data:
-                                if q[0] == q_id:  # question ID 매치
-                                    questioner_id = None
-                                    # questioner_id 찾기 (DB에서 직접 조회)
-                                    try:
-                                        conn = st.session_state.db_manager.get_connection()
-                                        cursor = conn.cursor()
-                                        cursor.execute("SELECT questioner_id FROM qna_board WHERE id = %s", (q_id,))
-                                        result = cursor.fetchone()
-                                        if result:
-                                            questioner_id = result[0]
-                                        cursor.close()
-                                        conn.close()
-                                    except:
-                                        pass
-                                    
-                                    if questioner_id == current_user_id:
-                                        with col2:
-                                            if st.button("✏️ 수정", key=f"edit_q_{q_id}"):
-                                                st.session_state.edit_question_id = q_id
-                                                st.rerun()
-                                        with col3:
-                                            if st.button("🗑️ 삭제", key=f"delete_q_{q_id}"):
-                                                if st.session_state.db_manager.delete_qna_question(q_id, current_user_id):
-                                                    st.success("✅ 질문이 삭제되었습니다!")
-                                                    st.rerun()
-                                                else:
-                                                    st.error("❌ 질문 삭제에 실패했습니다.")
-                                    break
+                    카테고리: {category} | 유형: {q_type}
+                    질문자: {questioner_name} | 답변 수: {answer_count}
+                    {created_at.strftime('%Y-%m-%d %H:%M')}
+                    """,
+                    key=f"card_{q_id}",
+                    use_container_width=True,
+                    help="클릭하면 질문 상세 내용과 답변을 확인할 수 있습니다"
+                )
+                
+                if card_clicked:
+                    st.session_state.selected_question_id = q_id
+                    st.rerun()
+                
+                # 수정/삭제 버튼 (질문 작성자만) - 작은 버튼으로 표시
+                current_user = st.session_state.get('current_user', None)
+                if current_user and len(current_user) > 0:
+                    current_user_id = current_user[0]
+                    # questioner_id 확인
+                    try:
+                        conn = st.session_state.db_manager.get_connection()
+                        cursor = conn.cursor()
+                        cursor.execute("SELECT questioner_id FROM qna_board WHERE id = %s", (q_id,))
+                        result = cursor.fetchone()
+                        questioner_id = result[0] if result else None
+                        cursor.close()
+                        conn.close()
+                        
+                        if questioner_id == current_user_id:
+                            col1, col2 = st.columns([6, 2])
+                            with col2:
+                                sub_col1, sub_col2 = st.columns(2)
+                                with sub_col1:
+                                    if st.button("✏️", key=f"edit_q_{q_id}", help="수정"):
+                                        st.session_state.edit_question_id = q_id
+                                        st.rerun()
+                                with sub_col2:
+                                    if st.button("🗑️", key=f"delete_q_{q_id}", help="삭제"):
+                                        if st.session_state.db_manager.delete_qna_question(q_id, current_user_id):
+                                            st.success("✅ 질문이 삭제되었습니다!")
+                                            st.rerun()
+                                        else:
+                                            st.error("❌ 질문 삭제에 실패했습니다.")
+                    except:
+                        pass
         else:
             st.info("등록된 질문이 없습니다.")
     

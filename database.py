@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 import json
 import logging
+import hashlib
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
