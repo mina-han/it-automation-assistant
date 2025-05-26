@@ -638,8 +638,10 @@ class DatabaseManager:
             answers = cursor.fetchall()
             cursor.close()
             conn.close()
+            logger.info(f"Retrieved {len(answers)} answers for question {question_id}")
             return answers
         except Exception as e:
+            logger.error(f"Failed to get QnA answers for question {question_id}: {e}")
             return []
     
     def add_qna_answer(self, question_id, content, author_id):

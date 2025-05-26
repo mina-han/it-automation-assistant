@@ -1388,7 +1388,7 @@ elif st.session_state.current_page == "QnA 질문 상세":
             # 답변 목록과 새로고침 버튼
             col1, col2 = st.columns([4, 1])
             with col1:
-                st.markdown("### 💬 답변 목록")
+                st.markdown(f"### 💬 답변 목록 ({len(answers)}개)")
             with col2:
                 if st.button("🔄 새로고침", key="refresh_answers"):
                     st.rerun()
