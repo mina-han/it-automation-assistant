@@ -598,41 +598,42 @@ if page == "💬 대화하기":
                     if len(st.session_state.conversation_context) > 5:
                         st.session_state.conversation_context = st.session_state.conversation_context[-5:]
                     
-                    # 답변이 없을 때 QnA 등록 제안
+                    # 응답 처리 및 버튼 표시 로직
+                    user = st.session_state.current_user
+                    user_id = user[0] if user and isinstance(user, (list, tuple)) and len(user) > 0 else None
+                    
+                    # QnA 등록 제안이 있는 경우
                     if "|SUGGEST_QNA_REGISTRATION" in response:
-                        # 응답을 메시지와 제안으로 분리
                         base_message = response.split("|SUGGEST_QNA_REGISTRATION")[0]
-                        
-                        # 기본 메시지를 대화 내역에 추가 (버튼 포함)
                         response_with_buttons = base_message + "|QNA_BUTTONS"
                         st.session_state.chat_history.append((user_input, response_with_buttons))
                         
                         # 데이터베이스에는 기본 메시지만 저장
-                        user = st.session_state.current_user
-                        user_id = user[0] if user and isinstance(user, (list, tuple)) and len(user) > 0 else None
                         try:
                             st.session_state.db_manager.save_chat_history(user_input, base_message, user_id=user_id)
                         except Exception as e:
                             st.error(f"대화 저장 중 오류가 발생했습니다: {e}")
+                    
+                    # 지식 등록 제안이 있는 경우
+                    elif "새로운 업무 지식 등록 제안" in response:
+                        response_with_buttons = response + "|KNOWLEDGE_BUTTONS"
+                        st.session_state.chat_history.append((user_input, response_with_buttons))
                         
-                        # 즉시 등록 처리를 위한 임시 변수 설정
-                        st.session_state.pending_qna_question = user_input
-                        
-                    else:
-                        # 정상 응답일 때만 대화 내역에 저장
+                        # 데이터베이스에 저장
                         try:
-                            user = st.session_state.current_user
-                            user_id = user[0] if user and isinstance(user, (list, tuple)) and len(user) > 0 else None
                             st.session_state.db_manager.save_chat_history(user_input, response, user_id=user_id)
                         except Exception as e:
                             st.error(f"대화 저장 중 오류가 발생했습니다: {e}")
+                    
+                    # 일반 응답
+                    else:
+                        st.session_state.chat_history.append((user_input, response))
                         
-                        # Check if response contains knowledge registration suggestion
-                        if "새로운 업무 지식 등록 제안" in response:
-                            response_with_buttons = response + "|KNOWLEDGE_BUTTONS"
-                            st.session_state.chat_history.append((user_input, response_with_buttons))
-                        else:
-                            st.session_state.chat_history.append((user_input, response))
+                        # 데이터베이스에 저장
+                        try:
+                            st.session_state.db_manager.save_chat_history(user_input, response, user_id=user_id)
+                        except Exception as e:
+                            st.error(f"대화 저장 중 오류가 발생했습니다: {e}")
                     
                     st.rerun()
     
