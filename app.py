@@ -96,9 +96,14 @@ with col2:
     # Display logo with SHOO character
     st.markdown("""
     <div style="text-align: center; margin-bottom: 20px;">
-        <div style="font-size: 3rem; margin-bottom: 10px;">🦊</div>
+    """, unsafe_allow_html=True)
+    
+    # Display new SHOO character image
+    st.image("attached_assets/image_1748219961365.png", width=150)
+    
+    st.markdown("""
         <div style="font-size: 2.5rem; font-weight: bold; color: #B5A081; margin-bottom: 5px;">물어보 SHOO</div>
-        <div style="font-size: 1rem; color: #888;">IT 실무자를 위한 자연어 이슈 검색/기록 도우미</div>
+        <div style="font-size: 1rem; color: #888;">IT 실무자를 위한 업무 지식 도우미</div>
     </div>
     """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
