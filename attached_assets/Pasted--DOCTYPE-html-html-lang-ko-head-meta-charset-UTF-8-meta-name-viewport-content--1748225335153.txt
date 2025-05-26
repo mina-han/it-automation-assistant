@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>  <title>\uubb3c어보 SHOO</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: #fefdfc;
+      color: #222;
+    }
+    .container {
+      display: flex;
+      height: 100vh;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+    .card {
+      display: flex;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+      overflow: hidden;
+      max-width: 1000px;
+      width: 100%;
+    }
+    .sidebar {
+      background: #f9f9f9;
+      padding: 32px 24px;
+      width: 250px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      border-right: 1px solid #e0e0e0;
+    }
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .content {
+      flex: 1;
+      padding: 48px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    .title {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      font-size: 16px;
+      color: #666;
+      margin-bottom: 40px;
+    }
+    .character {
+      position: relative;
+      max-width: 300px;
+      margin-bottom: 32px;
+    }
+    .balloon {
+      position: absolute;
+      left: -60px;
+      top: 20px;
+      display: flex;
+      gap: 8px;
+    }
+    .balloon img {
+      width: 28px;
+      height: 28px;
+    }
+    .chat-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .chat-desc {
+      font-size: 15px;
+      color: #555;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="sidebar">
+        <div class="sidebar-item">
+          <span>📍</span> <span>대화하기</span>
+        </div>
+        <div class="sidebar-item">
+          <span>➕</span> <span>업무 지식 등록</span>
+        </div>
+        <div class="sidebar-item">
+          <span>🔍</span> <span>업무 지식 조회</span>
+        </div>
+        <div class="sidebar-item">
+          <span>⏰</span> <span>나의 대화 이력</span>
+        </div>
+      </div>
+      <div class="content">
+        <div class="title">물어보 <strong>SHOO</strong>
+        </div>
+        <div class="subtitle">IT 실무자를 위한 업무 지식 도우미</div>
+
+        <div class="character">
+          <img src="/mnt/data/09abbd27-240f-4989-a011-2497afdb450e.png" alt="SHOO character" width="300" />
+          <div class="balloon">
+            <img src="https://cdn-icons-png.flaticon.com/512/889/889140.png" alt="thumbs up">
+            <img src="https://cdn-icons-png.flaticon.com/512/889/889141.png" alt="comment">
+            <img src="https://cdn-icons-png.flaticon.com/512/833/833472.png" alt="heart">
+          </div>
+        </div>
+
+        <div class="chat-title">
+          <span>💬</span>
+          <span>대화하기</span>
+        </div>
+        <div class="chat-desc">자연에 문의하시면 기존 이슈 해결 방안을 기반으로 답변드립니다.</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

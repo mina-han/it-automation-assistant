@@ -43,61 +43,71 @@ st.markdown("""
     
     .knowledge-card {
         background: white;
-        padding: 20px;
-        border-radius: 12px;
-        border: 2px solid #87CEEB;
-        margin-bottom: 16px;
-        box-shadow: 0 2px 8px rgba(135, 206, 235, 0.1);
-        transition: all 0.2s ease;
+        padding: 24px;
+        border-radius: 16px;
+        border: 1px solid #e0e0e0;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+        transition: all 0.3s ease;
         cursor: pointer;
     }
     
     .knowledge-card:hover {
-        border-color: #4682B4;
-        box-shadow: 0 4px 12px rgba(135, 206, 235, 0.2);
-        transform: translateY(-2px);
+        box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+        transform: translateY(-4px);
+        border-color: #87CEEB;
     }
     
     .knowledge-title {
-        font-size: 1.2rem;
-        font-weight: bold;
-        color: #2C3E50;
-        margin-bottom: 8px;
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #222;
+        margin-bottom: 12px;
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 12px;
     }
     
     .knowledge-preview {
         color: #555;
-        font-size: 0.95rem;
-        line-height: 1.4;
-        margin-bottom: 12px;
+        font-size: 1rem;
+        line-height: 1.6;
+        margin-bottom: 16px;
     }
     
     .knowledge-tags {
         display: flex;
         flex-wrap: wrap;
-        gap: 6px;
-        margin-top: 8px;
+        gap: 8px;
+        margin-top: 16px;
     }
     
     .knowledge-tag {
-        background: #E3F2FD;
-        color: #1976D2;
-        padding: 4px 8px;
-        border-radius: 12px;
-        font-size: 0.8rem;
+        background: #f0f8ff;
+        color: #2563eb;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
         font-weight: 500;
+        border: 1px solid #e3f2fd;
     }
     
     .knowledge-meta {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-top: 12px;
-        font-size: 0.85rem;
+        margin-top: 16px;
+        font-size: 0.9rem;
         color: #666;
+    }
+    
+    .type-badge {
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: white;
+        margin-right: 12px;
     }
     .issue-title {
         font-size: 1.3rem;
@@ -381,7 +391,7 @@ elif page == "🔍 업무 지식 조회":
             card_html = f'''
             <div class="knowledge-card">
                 <div class="knowledge-title">
-                    <span style="background-color: {type_color}; color: white; padding: 4px 10px; border-radius: 15px; font-size: 0.8rem; margin-right: 8px;">{knowledge_type}</span>
+                    <span class="type-badge" style="background-color: {type_color};">{knowledge_type}</span>
                     📄 {title}
                 </div>
                 <div class="knowledge-preview">{preview}</div>
