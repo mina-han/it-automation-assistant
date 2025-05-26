@@ -107,7 +107,7 @@ with col2:
 st.sidebar.title("📋 메뉴")
 page = st.sidebar.radio(
     "기능 선택",
-    ["💬 대화하기", "📝 이슈 등록", "🔍 이슈 조회"],
+    ["💬 대화하기", "📝 업무 지식 등록", "🔍 업무 지식 조회"],
     index=0
 )
 
@@ -181,32 +181,38 @@ if page == "💬 대화하기":
     
     st.markdown('</div>', unsafe_allow_html=True)
 
-elif page == "📝 이슈 등록":
-    st.header("📝 새 이슈 등록")
+elif page == "📝 업무 지식 등록":
+    st.header("📝 새로운 업무 지식 등록")
     
-    with st.form("issue_form"):
-        title = st.text_input("이슈 제목", placeholder="예: 데이터베이스 서버 응답 지연 문제")
-        content = st.text_area("이슈 내용", height=200, placeholder="문제 상황과 해결 방법을 자세히 기술해주세요...")
+    with st.form("knowledge_form"):
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            title = st.text_input("제목", placeholder="예: Oracle 데이터베이스 성능 최적화 방법")
+        with col2:
+            knowledge_type = st.selectbox("구분 타입", ["이슈", "메뉴얼"])
+        
+        content = st.text_area("내용", height=200, placeholder="상세한 내용을 입력해주세요...")
         
         submitted = st.form_submit_button("등록", type="primary")
         
         if submitted and title and content:
-            with st.spinner("이슈를 등록하고 있습니다..."):
+            with st.spinner("업무 지식을 등록하고 있습니다..."):
                 # Extract keywords and create summary
                 keywords = extract_keywords(content)
                 summary = summarize_text(content)
                 
                 # Save to database
-                issue_id = st.session_state.db_manager.add_issue(title, content, keywords)
+                knowledge_id = st.session_state.db_manager.add_knowledge(title, content, keywords, knowledge_type)
                 
                 # Update RAG embeddings
-                st.session_state.rag_engine.add_document(issue_id, title, content)
+                st.session_state.rag_engine.add_document(knowledge_id, title, content)
                 
                 # Display success card
-                st.success("✅ 이슈가 성공적으로 등록되었습니다!")
+                st.success("✅ 업무 지식이 성공적으로 등록되었습니다!")
                 
                 st.markdown('<div class="issue-card">', unsafe_allow_html=True)
                 st.markdown(f'<div class="issue-title">{title}</div>', unsafe_allow_html=True)
+                st.markdown(f"**구분:** {knowledge_type}")
                 st.markdown(f"**요약:** {summary}")
                 st.markdown(f'<div class="issue-keywords">키워드: {" ".join([f"#{kw}" for kw in keywords])}</div>', unsafe_allow_html=True)
                 
@@ -216,43 +222,51 @@ elif page == "📝 이슈 등록":
                         st.session_state.page = "💬 대화하기"
                         st.rerun()
                 with col2:
-                    if st.button("이슈 전체 조회", key="goto_issues"):
-                        st.session_state.page = "🔍 이슈 조회"
+                    if st.button("업무 지식 전체 조회", key="goto_knowledge"):
+                        st.session_state.page = "🔍 업무 지식 조회"
                         st.rerun()
                 
                 st.markdown('</div>', unsafe_allow_html=True)
 
-elif page == "🔍 이슈 조회":
-    st.header("🔍 이슈 조회")
+elif page == "🔍 업무 지식 조회":
+    st.header("🔍 업무 지식 조회")
     
     # Search and filter options
-    col1, col2 = st.columns([3, 1])
+    col1, col2, col3 = st.columns([2, 1, 1])
     with col1:
-        search_query = st.text_input("이슈 검색", placeholder="제목, 내용, 키워드로 검색...")
+        search_query = st.text_input("업무 지식 검색", placeholder="제목, 내용, 키워드로 검색...")
     with col2:
+        knowledge_type_filter = st.selectbox("구분 타입", ["전체", "이슈", "메뉴얼"])
+    with col3:
         sort_option = st.selectbox("정렬", ["조회수 높은 순", "최신 순", "제목 순"])
     
-    # Get issues from database
-    issues = st.session_state.db_manager.get_all_issues(search_query, sort_option)
+    # Get knowledge from database
+    filter_type = None if knowledge_type_filter == "전체" else knowledge_type_filter
+    knowledge_list = st.session_state.db_manager.get_all_knowledge(search_query, sort_option, filter_type)
     
-    if issues:
-        st.markdown(f"**총 {len(issues)}개의 이슈가 발견되었습니다.**")
+    if knowledge_list:
+        st.markdown(f"**총 {len(knowledge_list)}개의 업무 지식이 발견되었습니다.**")
         
-        for issue in issues:
-            issue_id, title, content, keywords_str, view_count, created_at = issue
+        for knowledge in knowledge_list:
+            knowledge_id, title, content, keywords_str, knowledge_type, view_count, created_at = knowledge
             
-            # Create issue card
+            # Create knowledge card
             st.markdown('<div class="issue-card">', unsafe_allow_html=True)
             
             col1, col2 = st.columns([4, 1])
             with col1:
-                if st.button(f"📄 {title}", key=f"issue_{issue_id}"):
+                # Knowledge type badge
+                type_color = "#4CAF50" if knowledge_type == "메뉴얼" else "#2196F3"
+                st.markdown(f'<span style="background-color: {type_color}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem;">{knowledge_type}</span>', unsafe_allow_html=True)
+                
+                if st.button(f"📄 {title}", key=f"knowledge_{knowledge_id}"):
                     # Increment view count
-                    st.session_state.db_manager.increment_view_count(issue_id)
+                    st.session_state.db_manager.increment_view_count(knowledge_id)
                     
-                    # Show issue details
-                    st.markdown("### 📋 이슈 상세")
+                    # Show knowledge details
+                    st.markdown("### 📋 업무 지식 상세")
                     st.markdown(f"**제목:** {title}")
+                    st.markdown(f"**구분:** {knowledge_type}")
                     st.markdown(f"**내용:**\n{content}")
                     if keywords_str:
                         keywords = keywords_str.split(',')
@@ -273,7 +287,7 @@ elif page == "🔍 이슈 조회":
             
             st.markdown('</div>', unsafe_allow_html=True)
     else:
-        st.info("등록된 이슈가 없습니다. 새로운 이슈를 등록해보세요!")
+        st.info("등록된 업무 지식이 없습니다. 새로운 지식을 등록해보세요!")
 
 # Footer
 st.markdown("---")

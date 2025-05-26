@@ -26,21 +26,21 @@ class RAGEngine:
         except Exception as e:
             logger.error(f"Failed to add document to RAG system: {e}")
     
-    def find_similar_issues(self, query: str, top_k: int = 5) -> List[Tuple[int, str, str, float]]:
-        """Find similar issues using simple text matching"""
+    def find_similar_knowledge(self, query: str, top_k: int = 5) -> List[Tuple[int, str, str, float]]:
+        """Find similar work knowledge using simple text matching"""
         try:
-            # Get all issues and perform simple keyword matching
-            all_issues = self.db_manager.get_all_issues()
+            # Get all knowledge and perform simple keyword matching
+            all_knowledge = self.db_manager.get_all_knowledge()
             
-            if not all_issues:
+            if not all_knowledge:
                 return []
             
             similarities = []
             query_lower = query.lower()
             query_words = set(query_lower.split())
             
-            for issue in all_issues:
-                issue_id, title, content, keywords, view_count, created_at = issue
+            for knowledge in all_knowledge:
+                knowledge_id, title, content, keywords, knowledge_type, view_count, created_at = knowledge
                 
                 # Simple similarity calculation based on word overlap
                 title_words = set(title.lower().split())
@@ -59,7 +59,7 @@ class RAGEngine:
                         if any(word in kw or kw in word for word in query_words):
                             similarity += 0.2
                 
-                similarities.append((issue_id, title, content, min(similarity, 1.0)))
+                similarities.append((knowledge_id, title, content, min(similarity, 1.0)))
             
             # Sort by similarity and return top k
             similarities.sort(key=lambda x: x[3], reverse=True)
@@ -70,29 +70,29 @@ class RAGEngine:
             return filtered_similarities[:top_k]
             
         except Exception as e:
-            logger.error(f"Failed to find similar issues: {e}")
+            logger.error(f"Failed to find similar knowledge: {e}")
             return []
     
     def get_context_for_query(self, query: str, max_context_length: int = 2000) -> Tuple[str, List[Dict[str, Any]]]:
-        """Get relevant context for a query from similar issues"""
+        """Get relevant context for a query from similar work knowledge"""
         try:
-            similar_issues = self.find_similar_issues(query, top_k=3)
+            similar_knowledge = self.find_similar_knowledge(query, top_k=3)
             
-            if not similar_issues:
-                return "관련된 이슈 정보를 찾을 수 없습니다.", []
+            if not similar_knowledge:
+                return "관련된 업무 지식 정보를 찾을 수 없습니다.", []
             
             context_parts = []
-            related_issues = []
+            related_knowledge = []
             
-            for issue_id, title, content, similarity in similar_issues:
+            for knowledge_id, title, content, similarity in similar_knowledge:
                 # Add to context
                 context_part = f"제목: {title}\n내용: {content}\n유사도: {similarity:.2f}\n"
                 
                 # Check if adding this would exceed max length
                 if len('\n---\n'.join(context_parts + [context_part])) <= max_context_length:
                     context_parts.append(context_part)
-                    related_issues.append({
-                        'issue_id': issue_id,
+                    related_knowledge.append({
+                        'knowledge_id': knowledge_id,
                         'title': title,
                         'similarity': similarity
                     })
@@ -101,7 +101,7 @@ class RAGEngine:
             
             context = '\n---\n'.join(context_parts)
             
-            return context, related_issues
+            return context, related_knowledge
             
         except Exception as e:
             logger.error(f"Failed to get context for query: {e}")

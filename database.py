@@ -42,24 +42,26 @@ class DatabaseManager:
             conn = self.get_connection()
             cursor = conn.cursor()
             
-            # Create issues table
+            # Create work_knowledge table (업무 지식)
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS issues (
+                CREATE TABLE IF NOT EXISTS work_knowledge (
                     id SERIAL PRIMARY KEY,
                     title VARCHAR(500) NOT NULL,
                     content TEXT NOT NULL,
                     keywords TEXT,
+                    knowledge_type VARCHAR(20) NOT NULL DEFAULT '이슈',
                     view_count INTEGER DEFAULT 0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT knowledge_type_check CHECK (knowledge_type IN ('이슈', '메뉴얼'))
                 )
             """)
             
             # Create embeddings table for RAG
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS issue_embeddings (
+                CREATE TABLE IF NOT EXISTS knowledge_embeddings (
                     id SERIAL PRIMARY KEY,
-                    issue_id INTEGER REFERENCES issues(id) ON DELETE CASCADE,
+                    knowledge_id INTEGER REFERENCES work_knowledge(id) ON DELETE CASCADE,
                     embedding_vector TEXT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
@@ -71,30 +73,31 @@ class DatabaseManager:
                     id SERIAL PRIMARY KEY,
                     user_message TEXT NOT NULL,
                     bot_response TEXT NOT NULL,
-                    related_issues TEXT,
+                    related_knowledge TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
             
             # Create indexes for better performance
             cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_issues_title ON issues(title);
-                CREATE INDEX IF NOT EXISTS idx_issues_keywords ON issues(keywords);
-                CREATE INDEX IF NOT EXISTS idx_issues_view_count ON issues(view_count DESC);
-                CREATE INDEX IF NOT EXISTS idx_issues_created_at ON issues(created_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_knowledge_title ON work_knowledge(title);
+                CREATE INDEX IF NOT EXISTS idx_knowledge_keywords ON work_knowledge(keywords);
+                CREATE INDEX IF NOT EXISTS idx_knowledge_type ON work_knowledge(knowledge_type);
+                CREATE INDEX IF NOT EXISTS idx_knowledge_view_count ON work_knowledge(view_count DESC);
+                CREATE INDEX IF NOT EXISTS idx_knowledge_created_at ON work_knowledge(created_at DESC);
             """)
             
             conn.commit()
             cursor.close()
             conn.close()
-            logger.info("Database initialized successfully")
+            logger.info("Database initialized successfully with work_knowledge structure")
             
         except Exception as e:
             logger.error(f"Database initialization failed: {e}")
             raise
     
-    def add_issue(self, title, content, keywords):
-        """Add a new issue to the database"""
+    def add_knowledge(self, title, content, keywords, knowledge_type="이슈"):
+        """Add new work knowledge to the database"""
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
@@ -102,45 +105,49 @@ class DatabaseManager:
             keywords_str = ','.join(keywords) if keywords else ''
             
             cursor.execute("""
-                INSERT INTO issues (title, content, keywords)
-                VALUES (%s, %s, %s)
+                INSERT INTO work_knowledge (title, content, keywords, knowledge_type)
+                VALUES (%s, %s, %s, %s)
                 RETURNING id
-            """, (title, content, keywords_str))
+            """, (title, content, keywords_str, knowledge_type))
             
-            issue_id = cursor.fetchone()[0]
+            knowledge_id = cursor.fetchone()[0]
             conn.commit()
             cursor.close()
             conn.close()
             
-            logger.info(f"Issue added successfully with ID: {issue_id}")
-            return issue_id
+            logger.info(f"Work knowledge added successfully with ID: {knowledge_id}")
+            return knowledge_id
             
         except Exception as e:
-            logger.error(f"Failed to add issue: {e}")
+            logger.error(f"Failed to add work knowledge: {e}")
             raise
     
-    def get_all_issues(self, search_query=None, sort_option="조회수 높은 순"):
-        """Retrieve all issues with optional search and sorting"""
+    def get_all_knowledge(self, search_query=None, sort_option="조회수 높은 순", knowledge_type=None):
+        """Retrieve all work knowledge with optional search, sorting and filtering"""
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
             
             base_query = """
-                SELECT id, title, content, keywords, view_count, created_at
-                FROM issues
+                SELECT id, title, content, keywords, knowledge_type, view_count, created_at
+                FROM work_knowledge
             """
             
-            where_clause = ""
+            where_conditions = []
             params = []
             
             if search_query:
-                where_clause = """
-                    WHERE title ILIKE %s 
-                    OR content ILIKE %s 
-                    OR keywords ILIKE %s
-                """
+                where_conditions.append("(title ILIKE %s OR content ILIKE %s OR keywords ILIKE %s)")
                 search_param = f"%{search_query}%"
-                params = [search_param, search_param, search_param]
+                params.extend([search_param, search_param, search_param])
+                
+            if knowledge_type:
+                where_conditions.append("knowledge_type = %s")
+                params.append(knowledge_type)
+            
+            where_clause = ""
+            if where_conditions:
+                where_clause = " WHERE " + " AND ".join(where_conditions)
             
             # Determine sort order
             if sort_option == "조회수 높은 순":
@@ -155,60 +162,60 @@ class DatabaseManager:
             full_query = base_query + where_clause + " " + order_clause
             
             cursor.execute(full_query, params)
-            issues = cursor.fetchall()
+            knowledge_list = cursor.fetchall()
             
             cursor.close()
             conn.close()
             
-            return issues
+            return knowledge_list
             
         except Exception as e:
-            logger.error(f"Failed to retrieve issues: {e}")
+            logger.error(f"Failed to retrieve work knowledge: {e}")
             return []
     
-    def get_issue_by_id(self, issue_id):
-        """Get a specific issue by ID"""
+    def get_knowledge_by_id(self, knowledge_id):
+        """Get specific work knowledge by ID"""
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
             
             cursor.execute("""
-                SELECT id, title, content, keywords, view_count, created_at
-                FROM issues
+                SELECT id, title, content, keywords, knowledge_type, view_count, created_at
+                FROM work_knowledge
                 WHERE id = %s
-            """, (issue_id,))
+            """, (knowledge_id,))
             
-            issue = cursor.fetchone()
+            knowledge = cursor.fetchone()
             cursor.close()
             conn.close()
             
-            return issue
+            return knowledge
             
         except Exception as e:
-            logger.error(f"Failed to retrieve issue {issue_id}: {e}")
+            logger.error(f"Failed to retrieve knowledge {knowledge_id}: {e}")
             return None
     
-    def increment_view_count(self, issue_id):
-        """Increment the view count for an issue"""
+    def increment_view_count(self, knowledge_id):
+        """Increment the view count for work knowledge"""
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
             
             cursor.execute("""
-                UPDATE issues 
+                UPDATE work_knowledge 
                 SET view_count = view_count + 1, updated_at = CURRENT_TIMESTAMP
                 WHERE id = %s
-            """, (issue_id,))
+            """, (knowledge_id,))
             
             conn.commit()
             cursor.close()
             conn.close()
             
         except Exception as e:
-            logger.error(f"Failed to increment view count for issue {issue_id}: {e}")
+            logger.error(f"Failed to increment view count for knowledge {knowledge_id}: {e}")
     
-    def add_embedding(self, issue_id, embedding_vector):
-        """Store embedding vector for an issue"""
+    def add_embedding(self, knowledge_id, embedding_vector):
+        """Store embedding vector for work knowledge"""
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
@@ -217,19 +224,19 @@ class DatabaseManager:
             embedding_json = json.dumps(embedding_vector.tolist()) if hasattr(embedding_vector, 'tolist') else json.dumps(embedding_vector)
             
             cursor.execute("""
-                INSERT INTO issue_embeddings (issue_id, embedding_vector)
+                INSERT INTO knowledge_embeddings (knowledge_id, embedding_vector)
                 VALUES (%s, %s)
-                ON CONFLICT (issue_id) DO UPDATE SET
+                ON CONFLICT (knowledge_id) DO UPDATE SET
                 embedding_vector = EXCLUDED.embedding_vector,
                 created_at = CURRENT_TIMESTAMP
-            """, (issue_id, embedding_json))
+            """, (knowledge_id, embedding_json))
             
             conn.commit()
             cursor.close()
             conn.close()
             
         except Exception as e:
-            logger.error(f"Failed to add embedding for issue {issue_id}: {e}")
+            logger.error(f"Failed to add embedding for knowledge {knowledge_id}: {e}")
     
     def get_all_embeddings(self):
         """Retrieve all embeddings for similarity search"""
@@ -238,9 +245,9 @@ class DatabaseManager:
             cursor = conn.cursor()
             
             cursor.execute("""
-                SELECT e.issue_id, e.embedding_vector, i.title, i.content
-                FROM issue_embeddings e
-                JOIN issues i ON e.issue_id = i.id
+                SELECT e.knowledge_id, e.embedding_vector, k.title, k.content
+                FROM knowledge_embeddings e
+                JOIN work_knowledge k ON e.knowledge_id = k.id
             """)
             
             results = cursor.fetchall()
@@ -249,12 +256,12 @@ class DatabaseManager:
             
             # Parse JSON embeddings back to lists
             parsed_results = []
-            for issue_id, embedding_json, title, content in results:
+            for knowledge_id, embedding_json, title, content in results:
                 try:
                     embedding = json.loads(embedding_json)
-                    parsed_results.append((issue_id, embedding, title, content))
+                    parsed_results.append((knowledge_id, embedding, title, content))
                 except json.JSONDecodeError:
-                    logger.warning(f"Failed to parse embedding for issue {issue_id}")
+                    logger.warning(f"Failed to parse embedding for knowledge {knowledge_id}")
                     continue
             
             return parsed_results
@@ -263,18 +270,18 @@ class DatabaseManager:
             logger.error(f"Failed to retrieve embeddings: {e}")
             return []
     
-    def save_chat_history(self, user_message, bot_response, related_issues=None):
+    def save_chat_history(self, user_message, bot_response, related_knowledge=None):
         """Save chat interaction to history"""
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
             
-            related_issues_json = json.dumps(related_issues) if related_issues else None
+            related_knowledge_json = json.dumps(related_knowledge) if related_knowledge else None
             
             cursor.execute("""
-                INSERT INTO chat_history (user_message, bot_response, related_issues)
+                INSERT INTO chat_history (user_message, bot_response, related_knowledge)
                 VALUES (%s, %s, %s)
-            """, (user_message, bot_response, related_issues_json))
+            """, (user_message, bot_response, related_knowledge_json))
             
             conn.commit()
             cursor.close()
