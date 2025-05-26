@@ -1,0 +1,97 @@
+✅ 현재 구현 누락 사항 정리
+QnA 답변에 좋아요 기능 없음
+
+좋아요 버튼 UI가 존재하지 않음
+
+좋아요 수를 저장할 테이블과 처리 로직 없음
+
+좋아요 기반 자동 등록 로직 없음
+
+좋아요 수가 2 이상일 때 업무 지식으로 등록하는 트리거 로직 없음
+
+자기 자신이 누른 좋아요 제외 필요
+
+답변 작성자 본인을 제외한 좋아요 수 판단 로직 필요
+
+✅ 구현 계획
+1. 테이블 추가 (예: qna_answer_likes)
+sql
+복사
+편집
+CREATE TABLE qna_answer_likes (
+    id SERIAL PRIMARY KEY,
+    answer_id INTEGER REFERENCES qna_answers(id),
+    user_id INTEGER REFERENCES users(id),
+    liked_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(answer_id, user_id)  -- 중복 방지
+);
+2. UI에 좋아요 버튼 추가
+QnA 질문 상세 페이지에서 각 답변 카드 아래에 다음 코드 추가:
+
+python
+복사
+편집
+if current_user and current_user[0] != answerer_id:
+    if st.button("👍 좋아요", key=f"like_btn_{answer_id}"):
+        st.session_state.db_manager.add_answer_like(answer_id, current_user[0])
+        st.rerun()
+3. 좋아요 등록 함수 (예: DatabaseManager 내부)
+python
+복사
+편집
+def add_answer_like(self, answer_id, user_id):
+    conn = self.get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT INTO qna_answer_likes (answer_id, user_id) VALUES (%s, %s)
+            ON CONFLICT DO NOTHING
+        """, (answer_id, user_id))
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+4. 좋아요 개수 확인 및 자동 등록 로직
+답변 좋아요 수가 2 이상 & 답변자가 아닌 사용자로부터 받은 경우, 다음 함수 실행:
+
+python
+복사
+편집
+def check_and_promote_to_knowledge(self, answer_id):
+    conn = self.get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT a.answer, a.question_id, a.author_id, 
+                   COUNT(DISTINCT l.user_id)
+            FROM qna_answers a
+            JOIN qna_answer_likes l ON a.id = l.answer_id
+            WHERE a.id = %s AND l.user_id != a.author_id
+            GROUP BY a.id
+            HAVING COUNT(DISTINCT l.user_id) >= 2
+        """, (answer_id,))
+        result = cursor.fetchone()
+        if result:
+            answer_content, question_id, author_id, like_count = result
+            cursor.execute("SELECT title FROM qna_board WHERE id = %s", (question_id,))
+            question_title = cursor.fetchone()[0]
+            
+            # 이미 등록된 업무 지식인지 중복 확인
+            cursor.execute("SELECT 1 FROM work_knowledge WHERE title = %s", (question_title,))
+            if not cursor.fetchone():
+                keywords = extract_keywords(answer_content)
+                summary = summarize_text(answer_content)
+                cursor.execute("""
+                    INSERT INTO work_knowledge (title, content, keywords, knowledge_type, user_id)
+                    VALUES (%s, %s, %s, '이슈', %s)
+                """, (question_title, answer_content, ','.join(keywords), author_id))
+                conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+→ 이 함수는 좋아요 버튼 클릭 시, 또는 QnA 상세 페이지 로딩 시 호출될 수 있습니다.
+
+✅ 추가 고려 사항
+이미 업무 지식으로 등록된 질문은 중복 등록 방지 필요
+
+경험치 보상 로직도 필요 시 추가 가능 (+5점 등)
