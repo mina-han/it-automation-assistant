@@ -158,11 +158,12 @@ class DatabaseManager:
             
             keywords_str = ','.join(keywords) if keywords else ''
             
+            kst_now = self._get_kst_now()
             cursor.execute("""
-                INSERT INTO work_knowledge (title, content, keywords, knowledge_type, user_id)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO work_knowledge (title, content, keywords, knowledge_type, user_id, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING id
-            """, (title, content, keywords_str, knowledge_type, user_id))
+            """, (title, content, keywords_str, knowledge_type, user_id, kst_now))
             
             knowledge_id = cursor.fetchone()[0]
             
@@ -337,10 +338,11 @@ class DatabaseManager:
             
             related_knowledge_json = json.dumps(related_knowledge) if related_knowledge else None
             
+            kst_now = self._get_kst_now()
             cursor.execute("""
-                INSERT INTO chat_history (user_message, bot_response, related_knowledge, user_id)
-                VALUES (%s, %s, %s, %s)
-            """, (user_message, bot_response, related_knowledge_json, user_id))
+                INSERT INTO chat_history (user_message, bot_response, related_knowledge, user_id, created_at)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (user_message, bot_response, related_knowledge_json, user_id, kst_now))
             
             conn.commit()
             cursor.close()
@@ -424,11 +426,12 @@ class DatabaseManager:
             conn = self.get_connection()
             cursor = conn.cursor()
             hashed_password = self._hash_password(password)
+            kst_now = self._get_kst_now()
             cursor.execute("""
-                INSERT INTO users (username, name, password, department)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO users (username, name, password, department, created_at)
+                VALUES (%s, %s, %s, %s, %s)
                 RETURNING id
-            """, (username, name, hashed_password, department))
+            """, (username, name, hashed_password, department, kst_now))
             user_id = cursor.fetchone()[0]
             conn.commit()
             cursor.close()
@@ -558,11 +561,12 @@ class DatabaseManager:
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
+            kst_now = self._get_kst_now()
             cursor.execute("""
-                INSERT INTO qna_board (title, question, category, question_type, questioner_id)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO qna_board (title, question, category, question_type, questioner_id, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING id
-            """, (title, question, category, question_type, questioner_id))
+            """, (title, question, category, question_type, questioner_id, kst_now))
             question_id = cursor.fetchone()[0]
             
             # Award 2 points for asking a question
@@ -643,11 +647,12 @@ class DatabaseManager:
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
+            kst_now = self._get_kst_now()
             cursor.execute("""
-                INSERT INTO qna_answers (question_id, content, author_id)
-                VALUES (%s, %s, %s)
+                INSERT INTO qna_answers (question_id, content, author_id, created_at)
+                VALUES (%s, %s, %s, %s)
                 RETURNING id
-            """, (question_id, content, author_id))
+            """, (question_id, content, author_id, kst_now))
             answer_id = cursor.fetchone()[0]
             
             # Award 3 points for answering a question
