@@ -857,20 +857,37 @@ elif page == "❓ QnA 게시판":
             if question_data:
                 q_id, title, content, category, q_type, status, created_at, questioner_name, questioner_id = question_data
                 
-                # 질문 카드 표시
+                # 질문 제목과 내용을 명확하게 표시
+                st.markdown("### 📋 질문 상세")
+                
+                # 질문 제목
                 st.markdown(f"""
-                <div style="background: white; padding: 20px; border-radius: 10px; margin: 10px 0; 
-                            border-left: 4px solid #2196F3; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <h3 style="color: #1976D2; margin: 0 0 15px 0;">{title}</h3>
-                    <p style="color: #333; margin: 10px 0; line-height: 1.6;">{content}</p>
-                    <div style="color: #666; margin: 10px 0;">
-                        <span><strong>카테고리:</strong> {category}</span> | 
-                        <span><strong>유형:</strong> {q_type}</span> | 
-                        <span><strong>질문자:</strong> {questioner_name}</span>
-                    </div>
-                    <p style="color: #888; font-size: 0.9em; margin: 5px 0;">{created_at.strftime('%Y-%m-%d %H:%M')}</p>
+                <div style="background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); 
+                            padding: 20px; border-radius: 10px; margin: 15px 0; color: white;">
+                    <h2 style="color: white; margin: 0; font-size: 1.5em; font-weight: bold;">{title}</h2>
                 </div>
                 """, unsafe_allow_html=True)
+                
+                # 질문 내용
+                st.markdown("#### 📝 질문 내용")
+                st.markdown(f"""
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 15px 0;
+                            border: 1px solid #e9ecef; line-height: 1.8;">
+                    <p style="color: #333; margin: 0; font-size: 1.1em; white-space: pre-wrap;">{content}</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # 질문 메타 정보
+                st.markdown("#### ℹ️ 질문 정보")
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.info(f"**카테고리**\n{category}")
+                with col2:
+                    st.info(f"**유형**\n{q_type}")
+                with col3:
+                    st.info(f"**질문자**\n{questioner_name}")
+                with col4:
+                    st.info(f"**등록일**\n{created_at.strftime('%Y-%m-%d %H:%M')}")
                 
                 # 답변 목록 가져오기
                 answers = st.session_state.db_manager.get_qna_answers(question_id)
