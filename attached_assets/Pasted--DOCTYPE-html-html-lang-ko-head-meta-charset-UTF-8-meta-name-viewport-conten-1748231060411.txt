@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>물어보 SHOO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Pretendard', sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #f9fafb;
+            color: #1f2937;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+        }
+
+        .main-title {
+            font-size: 2.8rem;
+            font-weight: bold;
+            color: #B5A081;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            line-height: 1.2;
+            text-shadow: 1px 1px 2px rgba(181, 160, 129, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: #888;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .knowledge-card {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            box-shadow: 2px 0 6px rgba(0, 0, 0, 0.04);
+        }
+
+        .knowledge-card:hover {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+        }
+
+        .knowledge-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .knowledge-preview {
+            color: #444;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 16px;
+            font-weight: 400;
+        }
+
+        .knowledge-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .knowledge-tag {
+            background: #f3f4f6;
+            color: #1f2937;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid #e5e7eb;
+        }
+
+        .knowledge-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="main-title">물어보 SHOO</div>
+        <div class="subtitle">IT 실무자를 위한 업무 지식 도우미</div>
+
+        <div class="knowledge-card">
+            <div class="knowledge-title">💡 서버 점검 시 체크리스트</div>
+            <div class="knowledge-preview">정기 점검 시 필수로 확인해야 할 항목과 그에 대한 설명을 정리한 내용입니다.</div>
+            <div class="knowledge-tags">
+                <div class="knowledge-tag">서버</div>
+                <div class="knowledge-tag">점검</div>
+                <div class="knowledge-tag">체크리스트</div>
+            </div>
+            <div class="knowledge-meta">
+                <span>2024.10.02</span>
+                <span>조회수 134</span>
+            </div>
+        </div>
+
+        <div class="knowledge-card">
+            <div class="knowledge-title">🛠 Oracle DB 오류 해결 방법</div>
+            <div class="knowledge-preview">ORA-12514, ORA-28001 등 자주 발생하는 Oracle 오류와 해결책을 소개합니다.</div>
+            <div class="knowledge-tags">
+                <div class="knowledge-tag">Oracle</div>
+                <div class="knowledge-tag">DB</div>
+                <div class="knowledge-tag">오류</div>
+            </div>
+            <div class="knowledge-meta">
+                <span>2024.09.27</span>
+                <span>조회수 89</span>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -42,7 +42,21 @@ class DatabaseManager:
             conn = self.get_connection()
             cursor = conn.cursor()
             
-            # Create work_knowledge table (업무 지식)
+            # Create users table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY,
+                    username VARCHAR(50) UNIQUE NOT NULL,
+                    name VARCHAR(100) NOT NULL,
+                    password VARCHAR(255) NOT NULL,
+                    department VARCHAR(100) NOT NULL,
+                    experience_points INTEGER DEFAULT 0,
+                    level INTEGER DEFAULT 1,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            # Create work_knowledge table (업무 지식) - add user_id
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS work_knowledge (
                     id SERIAL PRIMARY KEY,
@@ -51,9 +65,28 @@ class DatabaseManager:
                     keywords TEXT,
                     knowledge_type VARCHAR(20) NOT NULL DEFAULT '이슈',
                     view_count INTEGER DEFAULT 0,
+                    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     CONSTRAINT knowledge_type_check CHECK (knowledge_type IN ('이슈', '메뉴얼'))
+                )
+            """)
+            
+            # Create QnA board table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS qna_board (
+                    id SERIAL PRIMARY KEY,
+                    title VARCHAR(500) NOT NULL,
+                    question TEXT NOT NULL,
+                    answer TEXT,
+                    category VARCHAR(100) NOT NULL,
+                    question_type VARCHAR(50) NOT NULL,
+                    questioner_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                    answerer_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                    status VARCHAR(20) DEFAULT 'pending',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    answered_at TIMESTAMP,
+                    CONSTRAINT question_type_check CHECK (question_type IN ('issue', 'manual'))
                 )
             """)
             
@@ -67,13 +100,15 @@ class DatabaseManager:
                 )
             """)
             
-            # Create chat history table
+            # Create chat history table - add user_id
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS chat_history (
                     id SERIAL PRIMARY KEY,
+                    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
                     user_message TEXT NOT NULL,
                     bot_response TEXT NOT NULL,
                     related_knowledge TEXT,
+                    intent_type VARCHAR(50),
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
@@ -348,3 +383,98 @@ class DatabaseManager:
             
         except Exception as e:
             logger.error(f"Failed to clear chat history: {e}")
+    
+    # User management methods
+    def create_user(self, username, name, password, department):
+        """Create a new user"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO users (username, name, password, department)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id
+            """, (username, name, password, department))
+            user_id = cursor.fetchone()[0]
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return user_id
+        except Exception as e:
+            raise e
+    
+    def authenticate_user(self, username, password):
+        """Authenticate user and return user data"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, username, name, department, experience_points, level
+                FROM users WHERE username = %s AND password = %s
+            """, (username, password))
+            user = cursor.fetchone()
+            cursor.close()
+            conn.close()
+            return user
+        except Exception as e:
+            return None
+    
+    def get_user_by_id(self, user_id):
+        """Get user by ID"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, username, name, department, experience_points, level
+                FROM users WHERE id = %s
+            """, (user_id,))
+            user = cursor.fetchone()
+            cursor.close()
+            conn.close()
+            return user
+        except Exception as e:
+            return None
+    
+    def update_user_experience(self, user_id, points_to_add):
+        """Update user experience points and level"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # Get current experience
+            cursor.execute("SELECT experience_points FROM users WHERE id = %s", (user_id,))
+            current_exp = cursor.fetchone()[0]
+            new_exp = current_exp + points_to_add
+            
+            # Calculate new level (exponential growth)
+            new_level = int((new_exp / 100) ** 0.5) + 1
+            
+            cursor.execute("""
+                UPDATE users SET experience_points = %s, level = %s
+                WHERE id = %s
+            """, (new_exp, new_level, user_id))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return new_exp, new_level
+        except Exception as e:
+            raise e
+    
+    def get_user_rankings(self, limit=10):
+        """Get top users by experience points"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT username, name, department, experience_points, level
+                FROM users 
+                ORDER BY experience_points DESC 
+                LIMIT %s
+            """, (limit,))
+            rankings = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return rankings
+        except Exception as e:
+            return []

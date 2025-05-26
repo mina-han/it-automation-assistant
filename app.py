@@ -204,6 +204,12 @@ if 'conversation_context' not in st.session_state:
 if 'current_page' not in st.session_state:
     st.session_state.current_page = "💬 대화하기"
 
+if 'current_user' not in st.session_state:
+    st.session_state.current_user = None
+
+if 'auth_mode' not in st.session_state:
+    st.session_state.auth_mode = 'login'  # 'login' or 'register'
+
 # Main header with logo and branding
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
@@ -361,7 +367,18 @@ elif page == "📝 업무 지식 등록":
                 st.rerun()
 
 elif page == "🔍 업무 지식 조회":
-    st.header("🔍 업무 지식 조회")
+    # Main title styling
+    st.markdown("""
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h1 style="font-size: 2.8rem; font-weight: bold; color: #B5A081; margin-bottom: 0.5rem; 
+                   line-height: 1.2; text-shadow: 1px 1px 2px rgba(181, 160, 129, 0.3);">
+            물어보 SHOO
+        </h1>
+        <p style="font-size: 1rem; color: #888; margin-bottom: 2rem;">
+            IT 실무자를 위한 업무 지식 도우미
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
     
     # Search and filter options
     col1, col2, col3 = st.columns([2, 1, 1])
