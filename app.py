@@ -244,15 +244,8 @@ if st.session_state.current_user is None:
                     if username and password:
                         user = st.session_state.db_manager.authenticate_user(username, password)
                         if user:
-                            st.session_state.current_user = {
-                                'id': user[0],
-                                'username': user[1],
-                                'name': user[2],
-                                'department': user[3],
-                                'experience_points': user[4],
-                                'level': user[5]
-                            }
-                            st.success(f"환영합니다, {user[2]}님!")
+                            st.session_state.current_user = user
+                            st.success(f"환영합니다, {user[2] if len(user) > 2 else '사용자'}님!")
                             st.rerun()
                         else:
                             st.error("아이디 또는 비밀번호가 올바르지 않습니다.")
@@ -456,7 +449,7 @@ if page == "💬 대화하기":
                     try:
                         user = st.session_state.current_user
                         user_id = user[0] if user and isinstance(user, (list, tuple)) and len(user) > 0 else None
-                        st.session_state.db_manager.save_chat_history(user_input, response)
+                        st.session_state.db_manager.save_chat_history(user_input, response, user_id=user_id)
                     except Exception as e:
                         st.error(f"대화 저장 중 오류가 발생했습니다: {e}")
                     
@@ -658,8 +651,14 @@ elif page == "📋 나의 대화 이력":
             st.success("모든 대화 이력이 삭제되었습니다.")
             st.rerun()
     
-    # Get chat history from database
-    chat_history = st.session_state.db_manager.get_chat_history(limit=50)
+    # Get chat history from database (only for current user)
+    user = st.session_state.current_user
+    user_id = user[0] if user and isinstance(user, (list, tuple)) and len(user) > 0 else None
+    
+    if user_id:
+        chat_history = st.session_state.db_manager.get_chat_history(limit=50, user_id=user_id)
+    else:
+        chat_history = []
     
     if chat_history:
         st.markdown(f"**총 {len(chat_history)}개의 대화가 기록되어 있습니다.**")
@@ -756,12 +755,26 @@ elif page == "❓ QnA 게시판":
             st.info("등록된 질문이 없습니다.")
     
     with tab2:
+        st.markdown("### 새로운 질문 등록")
+        
+        # 챗봇에서 넘어온 미리 채워진 질문 확인
+        pre_filled_question = st.session_state.get('qna_question', '')
+        pre_filled_type = st.session_state.get('qna_type', 'issue')
+        
+        # 미리 채워진 질문이 있으면 알림 표시
+        if pre_filled_question:
+            st.success("💡 챗봇 대화에서 등록 요청된 질문입니다. 내용을 확인하고 수정하시거나 그대로 등록하세요!")
+        
         with st.form("new_question_form"):
-            st.markdown("### 새로운 질문 등록")
-            question_title = st.text_input("제목", placeholder="질문의 제목을 입력하세요")
-            question_content = st.text_area("질문 내용", height=150, placeholder="상세한 질문 내용을 입력하세요")
+            question_title = st.text_input("제목", 
+                value=pre_filled_question[:50] + "..." if len(pre_filled_question) > 50 else pre_filled_question,
+                placeholder="질문의 제목을 입력하세요")
+            question_content = st.text_area("질문 내용", 
+                value=pre_filled_question,
+                height=150, placeholder="상세한 질문 내용을 입력하세요")
             question_category = st.selectbox("카테고리", ["데이터베이스", "네트워크", "보안", "애플리케이션", "시스템"])
-            question_type = st.selectbox("질문 유형", ["issue", "manual"])
+            question_type = st.selectbox("질문 유형", ["issue", "manual"], 
+                index=0 if pre_filled_type == "issue" else 1)
             
             if st.form_submit_button("질문 등록", type="primary"):
                 if question_title and question_content:
@@ -774,6 +787,11 @@ elif page == "❓ QnA 게시판":
                         )
                         if question_id:
                             st.success("✅ 질문이 성공적으로 등록되었습니다! (+2 경험치)")
+                            # 미리 채워진 질문 정보 제거
+                            if 'qna_question' in st.session_state:
+                                del st.session_state['qna_question']
+                            if 'qna_type' in st.session_state:
+                                del st.session_state['qna_type']
                             st.rerun()
                         else:
                             st.error("질문 등록에 실패했습니다.")
@@ -825,7 +843,7 @@ elif page == "👤 나의 정보":
     with tab1:
         # Show user's knowledge contributions
         user_knowledge = st.session_state.db_manager.get_all_knowledge()
-        user_contributions = [k for k in user_knowledge if len(k) > 6 and k[6] == user[0]] if user and len(user) > 0 else []
+        user_contributions = [k for k in user_knowledge if len(k) > 6 and k[6] == user[0]] if user and isinstance(user, (list, tuple)) and len(user) > 0 else []
         
         if user_contributions:
             st.markdown(f"**총 {len(user_contributions)}개의 업무 지식을 등록했습니다.**")

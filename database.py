@@ -310,7 +310,7 @@ class DatabaseManager:
             logger.error(f"Failed to retrieve embeddings: {e}")
             return []
     
-    def save_chat_history(self, user_message, bot_response, related_knowledge=None):
+    def save_chat_history(self, user_message, bot_response, related_knowledge=None, user_id=None):
         """Save chat interaction to history"""
         try:
             conn = self.get_connection()
@@ -319,9 +319,9 @@ class DatabaseManager:
             related_knowledge_json = json.dumps(related_knowledge) if related_knowledge else None
             
             cursor.execute("""
-                INSERT INTO chat_history (user_message, bot_response, related_knowledge)
-                VALUES (%s, %s, %s)
-            """, (user_message, bot_response, related_knowledge_json))
+                INSERT INTO chat_history (user_message, bot_response, related_knowledge, user_id)
+                VALUES (%s, %s, %s, %s)
+            """, (user_message, bot_response, related_knowledge_json, user_id))
             
             conn.commit()
             cursor.close()
@@ -330,18 +330,27 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Failed to save chat history: {e}")
     
-    def get_chat_history(self, limit=50):
-        """Retrieve chat history with limit"""
+    def get_chat_history(self, limit=50, user_id=None):
+        """Retrieve chat history with limit, optionally filtered by user"""
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
             
-            cursor.execute("""
-                SELECT id, user_message, bot_response, related_knowledge, created_at
-                FROM chat_history
-                ORDER BY created_at DESC
-                LIMIT %s
-            """, (limit,))
+            if user_id:
+                cursor.execute("""
+                    SELECT id, user_message, bot_response, related_knowledge, created_at
+                    FROM chat_history
+                    WHERE user_id = %s
+                    ORDER BY created_at DESC
+                    LIMIT %s
+                """, (user_id, limit))
+            else:
+                cursor.execute("""
+                    SELECT id, user_message, bot_response, related_knowledge, created_at
+                    FROM chat_history
+                    ORDER BY created_at DESC
+                    LIMIT %s
+                """, (limit,))
             
             history = cursor.fetchall()
             cursor.close()
