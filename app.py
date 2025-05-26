@@ -216,18 +216,6 @@ if st.session_state.current_user is None:
     # Show login/register page
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.markdown("""
-        <div style="text-align: center; margin-bottom: 2rem;">
-            <h1 style="font-size: 2.8rem; font-weight: bold; color: #B5A081; margin-bottom: 0.5rem; 
-                       line-height: 1.2; text-shadow: 1px 1px 2px rgba(181, 160, 129, 0.3);">
-                물어보 SHOO
-            </h1>
-            <p style="font-size: 1rem; color: #888;">
-                IT 실무자를 위한 업무 지식 도우미
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-        
         # Display SHOO character
         st.image("attached_assets/image_1748235445541.png", width=300)
         
@@ -381,15 +369,8 @@ with col1:
 with col2:
     st.markdown('<div class="mascot-header">', unsafe_allow_html=True)
     
-    # Display logo with SHOO character
-    st.markdown("""
-    <div style="text-align: center; margin-bottom: 20px;">
-        <div style="font-size: 2.5rem; font-weight: bold; color: #B5A081; margin-bottom: 15px;">물어보 SHOO</div>
-        <div style="font-size: 1rem; color: #888; margin-bottom: 20px;">IT 실무자를 위한 업무 지식 도우미</div>
-    """, unsafe_allow_html=True)
-    
     # Display new SHOO character image
-    st.image("attached_assets/image_1748235445541.png", width=200)
+    st.image("attached_assets/image_1748235445541.png", width=600)
     
     st.markdown("""
     </div>
