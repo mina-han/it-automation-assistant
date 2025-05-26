@@ -100,9 +100,12 @@ class ChatBot:
             if related_issues:
                 bot_response += f"\n\n📚 **관련 유사 이슈들:**\n"
                 for issue in related_issues[:3]:  # Show top 3
-                    # Include issue ID for linking
-                    issue_id = issue.get('id', 'unknown')
-                    bot_response += f"• [LINK:{issue_id}]{issue['title']}[/LINK] (유사도: {issue['similarity']:.0%})\n"
+                    # Include issue ID for linking only if valid
+                    issue_id = issue.get('id')
+                    if issue_id and issue_id != 'unknown':
+                        bot_response += f"• [LINK:{issue_id}]{issue['title']}[/LINK] (유사도: {issue['similarity']:.0%})\n"
+                    else:
+                        bot_response += f"• {issue['title']} (유사도: {issue['similarity']:.0%})\n"
             
             # Remove inappropriate responses for perfect matches
             if has_perfect_matches:
@@ -130,7 +133,7 @@ class ChatBot:
                 # If not all matches are perfect, always suggest knowledge registration
                 registration_analysis["should_suggest"] = True
                 if not registration_analysis.get("reason"):
-                    registration_analysis["reason"] = "새로운 업무 지식으로 등록하여 팀원들과 공유하시겠습니까?"
+                    registration_analysis["reason"] = "새로운 이슈로 보이며, 관련 업무 지식이 충분하지 않습니다."
                 if not registration_analysis.get("type"):
                     registration_analysis["type"] = "issue"
             
