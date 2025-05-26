@@ -228,7 +228,7 @@ if st.session_state.current_user is None:
         """, unsafe_allow_html=True)
         
         # Display SHOO character
-        st.image("attached_assets/image_1748219961365.png", width=200)
+        st.image("attached_assets/image_1748235445541.png", width=300)
         
         # Login/Register tabs
         tab1, tab2 = st.tabs(["로그인", "회원가입"])
@@ -356,7 +356,7 @@ with col2:
     """, unsafe_allow_html=True)
     
     # Display new SHOO character image
-    st.image("attached_assets/image_1748219961365.png", width=150)
+    st.image("attached_assets/image_1748235445541.png", width=200)
     
     st.markdown("""
     </div>
