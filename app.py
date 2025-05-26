@@ -274,9 +274,6 @@ elif page == "🔍 업무 지식 조회":
                     st.markdown(f"**제목:** {title}")
                     st.markdown(f"**구분:** {knowledge_type}")
                     st.markdown(f"**내용:**\n{content}")
-                    if keywords_str:
-                        keywords = keywords_str.split(',')
-                        st.markdown(f"**키워드:** {' '.join([f'#{kw.strip()}' for kw in keywords])}")
                     st.markdown(f"**조회수:** {view_count + 1}")
                     st.markdown(f"**등록일:** {created_at}")
             
