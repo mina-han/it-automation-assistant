@@ -8,8 +8,8 @@ import os
 
 # Page configuration
 st.set_page_config(
-    page_title="물어보SHOO - IT 이슈 도우미",
-    page_icon="🤖",
+    page_title="물어보SHOO - IT 실무자를 위한 자연어 이슈 검색/기록 도우미",
+    page_icon="🔍",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -18,11 +18,13 @@ st.set_page_config(
 st.markdown("""
 <style>
     .main-title {
-        font-size: 2.5rem;
+        font-size: 2.8rem;
         font-weight: bold;
         color: #B5A081;
         text-align: center;
-        margin-bottom: 1rem;
+        margin-bottom: 0.5rem;
+        line-height: 1.2;
+        text-shadow: 1px 1px 2px rgba(181, 160, 129, 0.3);
     }
     .subtitle {
         font-size: 1.2rem;
@@ -95,9 +97,9 @@ with col2:
     try:
         with open("assets/logo.svg", "r", encoding="utf-8") as f:
             logo_svg = f.read()
-        st.markdown(f'<div style="width: 100px; margin: 0 auto;">{logo_svg}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="width: 150px; margin: 0 auto; margin-bottom: 10px;">{logo_svg}</div>', unsafe_allow_html=True)
     except:
-        st.markdown("🤖", unsafe_allow_html=True)
+        st.markdown('<div style="font-size: 4rem; text-align: center; color: #B5A081;">🔍</div>', unsafe_allow_html=True)
     
     st.markdown('<div class="main-title">물어보<br>SHOO</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtitle">IT 실무자를 위한 자연어 이슈 검색/기록 도우미</div>', unsafe_allow_html=True)
