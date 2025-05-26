@@ -917,36 +917,36 @@ elif page == "🔍 업무 지식 조회":
                     
                     # Hidden button for card click functionality
                     if st.button("📄 상세보기", key=f"card_btn_{knowledge_id}"):
-                    # Increment view count when clicked
-                    st.session_state.db_manager.increment_view_count(knowledge_id)
-                    
-                    # Show full knowledge details in a modal-like container
-                    st.markdown("---")
-                    
-                    # Title with edit/delete buttons if user is author
-                    col1, col2 = st.columns([4, 1])
-                    with col1:
-                        st.markdown(f"### 📋 {title}")
-                    
-                    # Check if user is the author of this knowledge
-                    try:
-                        conn = st.session_state.db_manager.get_connection()
-                        cursor = conn.cursor()
-                        cursor.execute("SELECT user_id FROM work_knowledge WHERE id = %s", (knowledge_id,))
-                        result = cursor.fetchone()
-                        knowledge_author_id = result[0] if result else None
-                        cursor.close()
-                        conn.close()
+                        # Increment view count when clicked
+                        st.session_state.db_manager.increment_view_count(knowledge_id)
                         
-                        is_author = user_id and knowledge_author_id and user_id == knowledge_author_id
+                        # Show full knowledge details in a modal-like container
+                        st.markdown("---")
                         
-                        with col2:
-                            if is_author:
-                                if st.button("⚙️ 관리", key=f"manage_knowledge_{knowledge_id}"):
-                                    st.session_state[f'show_knowledge_edit_{knowledge_id}'] = not st.session_state.get(f'show_knowledge_edit_{knowledge_id}', False)
-                                    st.rerun()
-                    except Exception as e:
-                        is_author = False
+                        # Title with edit/delete buttons if user is author
+                        col1, col2 = st.columns([4, 1])
+                        with col1:
+                            st.markdown(f"### 📋 {title}")
+                        
+                        # Check if user is the author of this knowledge
+                        try:
+                            conn = st.session_state.db_manager.get_connection()
+                            cursor = conn.cursor()
+                            cursor.execute("SELECT user_id FROM work_knowledge WHERE id = %s", (knowledge_id,))
+                            result = cursor.fetchone()
+                            knowledge_author_id = result[0] if result else None
+                            cursor.close()
+                            conn.close()
+                            
+                            is_author = user_id and knowledge_author_id and user_id == knowledge_author_id
+                            
+                            with col2:
+                                if is_author:
+                                    if st.button("⚙️ 관리", key=f"manage_knowledge_{knowledge_id}"):
+                                        st.session_state[f'show_knowledge_edit_{knowledge_id}'] = not st.session_state.get(f'show_knowledge_edit_{knowledge_id}', False)
+                                        st.rerun()
+                        except Exception as e:
+                            is_author = False
                     
                     # Edit/Delete options
                     if is_author and st.session_state.get(f'show_knowledge_edit_{knowledge_id}', False):
@@ -1015,8 +1015,8 @@ elif page == "🔍 업무 지식 조회":
                 
                 # Add some spacing
                 st.markdown("<br>", unsafe_allow_html=True)
-    else:
-        st.info("등록된 업무 지식이 없습니다. 새로운 지식을 등록해보세요!")
+        else:
+            st.info("등록된 업무 지식이 없습니다. 새로운 지식을 등록해보세요!")
 
 elif page == "📋 나의 대화 이력":
     st.header("📋 나의 대화 이력")
