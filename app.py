@@ -344,20 +344,7 @@ if "show_account_settings" in st.session_state and st.session_state.show_account
 # Main header with logo and branding (logged in users)
 col1, col2, col3 = st.columns([1, 2, 1])
 with col1:
-    # Display user info safely
-    if hasattr(st.session_state, 'current_user') and st.session_state.current_user:
-        st.markdown("**👤 로그인된 사용자**")
-    
-    # Account management buttons in the bottom left
-    st.markdown("---")
-    if st.button("⚙️ 내 계정 정보 변경", key="account_settings"):
-        st.session_state.show_account_settings = True
-        st.rerun()
-    
-    if st.button("🚪 로그아웃", key="logout"):
-        st.session_state.current_user = None
-        st.session_state.show_account_settings = False
-        st.rerun()
+    st.empty()  # Left space
 with col2:
     st.markdown('<div class="mascot-header">', unsafe_allow_html=True)
     
@@ -375,6 +362,32 @@ with col2:
     </div>
     """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
+with col3:
+    # 우측 상단 사용자 메뉴
+    if hasattr(st.session_state, 'current_user') and st.session_state.current_user:
+        user = st.session_state.current_user
+        user_name = user[2] if len(user) > 2 else "사용자"
+        
+        # 사용자 정보 표시
+        st.markdown(f"""
+        <div style="text-align: right; margin-bottom: 10px;">
+            <div style="color: #666; font-size: 0.9em;">안녕하세요!</div>
+            <div style="color: #333; font-weight: bold;">{user_name}님</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # 계정 설정 버튼
+        if st.button("⚙️ 계정 정보 변경", key="account_settings_top"):
+            st.session_state.show_account_settings = True
+            st.rerun()
+        
+        # 로그아웃 버튼
+        if st.button("🚪 로그아웃", key="logout_top"):
+            st.session_state.current_user = None
+            st.session_state.show_account_settings = False
+            # 페이지를 대화하기로 리셋
+            st.session_state.current_page = "💬 대화하기"
+            st.rerun()
 
 # Modern Sidebar Navigation
 with st.sidebar:
