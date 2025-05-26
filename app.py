@@ -470,16 +470,9 @@ if page == "💬 대화하기":
                     if len(st.session_state.conversation_context) > 5:
                         st.session_state.conversation_context = st.session_state.conversation_context[-5:]
                     
-                    # 자동으로 데이터베이스에 저장 (사용자 ID 포함)
-                    try:
-                        user = st.session_state.current_user
-                        user_id = user[0] if user and isinstance(user, (list, tuple)) and len(user) > 0 else None
-                        st.session_state.db_manager.save_chat_history(user_input, response, user_id=user_id)
-                    except Exception as e:
-                        st.error(f"대화 저장 중 오류가 발생했습니다: {e}")
-                    
                     # 답변이 없을 때 QnA 등록 제안
                     if response == "SUGGEST_QNA_REGISTRATION":
+                        # QnA 등록 제안은 대화 내역에 저장하지 않음
                         st.markdown("---")
                         st.markdown("### 💡 이 이슈(혹은 메뉴얼)에 대해 QnA 게시판의 질문으로 새로 등록하시겠습니까?")
                         st.markdown("현재 저장된 업무 지식에 없는 내용입니다. QnA 게시판에 질문으로 등록하여 다른 동료들의 도움을 받아보세요!")
@@ -507,6 +500,14 @@ if page == "💬 대화하기":
                         with col2:
                             if st.button("❌ 아니오", key=f"qna_no_{len(st.session_state.chat_history)}"):
                                 st.info("💬 다른 질문을 시도해보시거나 업무 지식 등록을 통해 정보를 추가해보세요!")
+                    else:
+                        # 정상 응답일 때만 대화 내역에 저장
+                        try:
+                            user = st.session_state.current_user
+                            user_id = user[0] if user and isinstance(user, (list, tuple)) and len(user) > 0 else None
+                            st.session_state.db_manager.save_chat_history(user_input, response, user_id=user_id)
+                        except Exception as e:
+                            st.error(f"대화 저장 중 오류가 발생했습니다: {e}")
                     
                     # Check if response contains knowledge registration suggestion
                     if "새로운 업무 지식 등록 제안" in response:
@@ -574,6 +575,7 @@ elif page == "📝 업무 지식 등록":
             with st.spinner("업무 지식을 등록하고 있습니다..."):
                 # 파일에서 텍스트 추출하여 내용에 추가
                 final_content = content if content else ""
+                final_title = title  # 기본값 설정
                 if uploaded_file is not None:
                     st.info(f"📎 파일 '{uploaded_file.name}' 처리 중...")
                     extracted_text, success = extract_text_from_file(uploaded_file)
@@ -702,7 +704,7 @@ elif page == "🔍 업무 지식 조회":
             type_color = "#4CAF50" if knowledge_type == "메뉴얼" else "#2196F3"
             
             card_html = f'''
-            <div class="knowledge-card" onclick="document.getElementById('card_btn_{knowledge_id}').click();" style="cursor: pointer;">
+            <div class="knowledge-card" style="cursor: pointer;">
                 <div class="knowledge-title">
                     <span class="type-badge" style="background-color: {type_color};">{knowledge_type}</span>
                     📄 {title}
