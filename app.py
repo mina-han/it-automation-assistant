@@ -468,16 +468,40 @@ if page == "💬 대화하기":
                         col1, col2, col3 = st.columns([1, 1, 2])
                         with col1:
                             if st.button("✅ 예 (이슈)", key=f"qna_yes_issue_{len(st.session_state.chat_history)}"):
-                                st.session_state.qna_question = user_input
-                                st.session_state.qna_type = "issue"
-                                st.session_state.current_page = "❓ QnA 게시판"
-                                st.rerun()
+                                # 자동으로 QnA 질문 등록
+                                user = st.session_state.get('current_user', None)
+                                if user and isinstance(user, (list, tuple)) and len(user) > 0:
+                                    user_id = user[0]
+                                    question_title = f"이슈 문의: {user_input[:50]}..."
+                                    question_id = st.session_state.db_manager.add_qna_question(
+                                        question_title, user_input, "데이터베이스", "issue", user_id
+                                    )
+                                    if question_id:
+                                        st.success("✅ QnA 게시판에 이슈가 등록되었습니다!")
+                                        st.session_state.current_page = "❓ QnA 게시판"
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ 질문 등록 중 오류가 발생했습니다.")
+                                else:
+                                    st.error("❌ 로그인이 필요합니다.")
                         with col2:
                             if st.button("✅ 예 (메뉴얼)", key=f"qna_yes_manual_{len(st.session_state.chat_history)}"):
-                                st.session_state.qna_question = user_input
-                                st.session_state.qna_type = "manual"
-                                st.session_state.current_page = "❓ QnA 게시판"
-                                st.rerun()
+                                # 자동으로 QnA 질문 등록
+                                user = st.session_state.get('current_user', None)
+                                if user and isinstance(user, (list, tuple)) and len(user) > 0:
+                                    user_id = user[0]
+                                    question_title = f"메뉴얼 문의: {user_input[:50]}..."
+                                    question_id = st.session_state.db_manager.add_qna_question(
+                                        question_title, user_input, "데이터베이스", "manual", user_id
+                                    )
+                                    if question_id:
+                                        st.success("✅ QnA 게시판에 메뉴얼 질문이 등록되었습니다!")
+                                        st.session_state.current_page = "❓ QnA 게시판"
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ 질문 등록 중 오류가 발생했습니다.")
+                                else:
+                                    st.error("❌ 로그인이 필요합니다.")
                         with col3:
                             if st.button("❌ 아니오", key=f"qna_no_{len(st.session_state.chat_history)}"):
                                 pass
@@ -780,14 +804,275 @@ elif page == "❓ QnA 게시판":
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    if st.button(f"답변 보기/작성", key=f"view_q_{q_id}"):
-                        st.session_state.selected_question_id = q_id
-                        st.rerun()
+                    col1, col2, col3 = st.columns([2, 1, 1])
+                    with col1:
+                        if st.button(f"답변 보기/작성", key=f"view_q_{q_id}"):
+                            st.session_state.selected_question_id = q_id
+                            st.rerun()
+                    
+                    # 수정/삭제 버튼 (질문 작성자만)
+                    current_user = st.session_state.get('current_user', None)
+                    if current_user and len(current_user) > 0:
+                        current_user_id = current_user[0]
+                        # 질문자 ID 가져오기
+                        question_data = st.session_state.db_manager.get_qna_questions()
+                        if question_data:
+                            for q in question_data:
+                                if q[0] == q_id:  # question ID 매치
+                                    questioner_id = None
+                                    # questioner_id 찾기 (DB에서 직접 조회)
+                                    try:
+                                        conn = st.session_state.db_manager.get_connection()
+                                        cursor = conn.cursor()
+                                        cursor.execute("SELECT questioner_id FROM qna_board WHERE id = %s", (q_id,))
+                                        result = cursor.fetchone()
+                                        if result:
+                                            questioner_id = result[0]
+                                        cursor.close()
+                                        conn.close()
+                                    except:
+                                        pass
+                                    
+                                    if questioner_id == current_user_id:
+                                        with col2:
+                                            if st.button("✏️ 수정", key=f"edit_q_{q_id}"):
+                                                st.session_state.edit_question_id = q_id
+                                                st.rerun()
+                                        with col3:
+                                            if st.button("🗑️ 삭제", key=f"delete_q_{q_id}"):
+                                                if st.session_state.db_manager.delete_qna_question(q_id, current_user_id):
+                                                    st.success("✅ 질문이 삭제되었습니다!")
+                                                    st.rerun()
+                                                else:
+                                                    st.error("❌ 질문 삭제에 실패했습니다.")
+                                    break
         else:
             st.info("등록된 질문이 없습니다.")
     
+    # 질문 상세 보기 (답변 보기/작성)
+    if "selected_question_id" in st.session_state:
+        st.markdown("---")
+        st.markdown("### 📋 질문 상세 보기")
+        
+        question_id = st.session_state.selected_question_id
+        
+        # 질문 정보 가져오기
+        try:
+            conn = st.session_state.db_manager.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT q.id, q.title, q.question, q.category, q.question_type, q.status, q.created_at,
+                       u.name as questioner_name, q.questioner_id
+                FROM qna_board q
+                LEFT JOIN users u ON q.questioner_id = u.id
+                WHERE q.id = %s
+            """, (question_id,))
+            question_data = cursor.fetchone()
+            cursor.close()
+            conn.close()
+            
+            if question_data:
+                q_id, title, content, category, q_type, status, created_at, questioner_name, questioner_id = question_data
+                
+                # 질문 카드 표시
+                st.markdown(f"""
+                <div style="background: white; padding: 20px; border-radius: 10px; margin: 10px 0; 
+                            border-left: 4px solid #2196F3; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h3 style="color: #1976D2; margin: 0 0 15px 0;">{title}</h3>
+                    <p style="color: #333; margin: 10px 0; line-height: 1.6;">{content}</p>
+                    <div style="color: #666; margin: 10px 0;">
+                        <span><strong>카테고리:</strong> {category}</span> | 
+                        <span><strong>유형:</strong> {q_type}</span> | 
+                        <span><strong>질문자:</strong> {questioner_name}</span>
+                    </div>
+                    <p style="color: #888; font-size: 0.9em; margin: 5px 0;">{created_at.strftime('%Y-%m-%d %H:%M')}</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # 답변 목록 가져오기
+                answers = st.session_state.db_manager.get_qna_answers(question_id)
+                
+                st.markdown("### 💬 답변 목록")
+                if answers:
+                    for answer in answers:
+                        answer_id, answer_content, answer_created_at, is_accepted, answerer_name, answerer_department = answer
+                        
+                        # 답변 카드
+                        st.markdown(f"""
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0; 
+                                    border-left: 3px solid #28a745;">
+                            <p style="color: #333; margin: 0 0 10px 0; line-height: 1.6;">{answer_content}</p>
+                            <div style="color: #666; font-size: 0.9em;">
+                                <span><strong>답변자:</strong> {answerer_name} ({answerer_department})</span> | 
+                                <span>{answer_created_at.strftime('%Y-%m-%d %H:%M')}</span>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # 답변 수정/삭제 버튼 (답변 작성자만)
+                        current_user = st.session_state.get('current_user', None)
+                        if current_user and len(current_user) > 0:
+                            try:
+                                conn = st.session_state.db_manager.get_connection()
+                                cursor = conn.cursor()
+                                cursor.execute("SELECT author_id FROM qna_answers WHERE id = %s", (answer_id,))
+                                result = cursor.fetchone()
+                                answer_author_id = result[0] if result else None
+                                cursor.close()
+                                conn.close()
+                                
+                                if answer_author_id == current_user[0]:
+                                    col1, col2, col3 = st.columns([6, 1, 1])
+                                    with col2:
+                                        if st.button("✏️ 수정", key=f"edit_answer_{answer_id}"):
+                                            st.session_state.edit_answer_id = answer_id
+                                            st.session_state.edit_answer_content = answer_content
+                                            st.rerun()
+                                    with col3:
+                                        if st.button("🗑️ 삭제", key=f"delete_answer_{answer_id}"):
+                                            if st.session_state.db_manager.delete_qna_answer(answer_id, current_user[0]):
+                                                st.success("✅ 답변이 삭제되었습니다!")
+                                                st.rerun()
+                                            else:
+                                                st.error("❌ 답변 삭제에 실패했습니다.")
+                            except Exception as e:
+                                pass
+                else:
+                    st.info("아직 답변이 없습니다. 첫 번째 답변을 작성해보세요!")
+                
+                # 답변 수정 폼
+                if "edit_answer_id" in st.session_state:
+                    st.markdown("---")
+                    st.markdown("### ✏️ 답변 수정")
+                    
+                    with st.form("edit_answer_form"):
+                        edit_content = st.text_area("답변 내용", 
+                            value=st.session_state.get('edit_answer_content', ''),
+                            height=150)
+                        
+                        col1, col2 = st.columns([1, 1])
+                        with col1:
+                            if st.form_submit_button("✅ 수정 완료", type="primary"):
+                                user = st.session_state.get('current_user', None)
+                                if user and len(user) > 0:
+                                    if st.session_state.db_manager.update_qna_answer(
+                                        st.session_state.edit_answer_id, edit_content, user[0]):
+                                        st.success("✅ 답변이 성공적으로 수정되었습니다!")
+                                        del st.session_state['edit_answer_id']
+                                        del st.session_state['edit_answer_content']
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ 답변 수정에 실패했습니다.")
+                        with col2:
+                            if st.form_submit_button("❌ 취소"):
+                                del st.session_state['edit_answer_id']
+                                del st.session_state['edit_answer_content']
+                                st.rerun()
+                
+                # 새 답변 작성 폼
+                else:
+                    st.markdown("---")
+                    st.markdown("### ✍️ 새 답변 작성")
+                    
+                    current_user = st.session_state.get('current_user', None)
+                    if current_user:
+                        with st.form("new_answer_form"):
+                            answer_content = st.text_area("답변 내용", height=150, 
+                                placeholder="도움이 되는 답변을 작성해주세요...")
+                            
+                            if st.form_submit_button("📝 답변 등록", type="primary"):
+                                if answer_content.strip():
+                                    user_id = current_user[0]
+                                    answer_id = st.session_state.db_manager.add_qna_answer(
+                                        question_id, answer_content, user_id
+                                    )
+                                    if answer_id:
+                                        st.success("✅ 답변이 성공적으로 등록되었습니다! (+3 경험치)")
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ 답변 등록에 실패했습니다.")
+                                else:
+                                    st.error("❌ 답변 내용을 입력해주세요.")
+                    else:
+                        st.info("답변을 작성하려면 로그인이 필요합니다.")
+                
+                # 돌아가기 버튼
+                if st.button("🔙 질문 목록으로 돌아가기"):
+                    del st.session_state['selected_question_id']
+                    if 'edit_answer_id' in st.session_state:
+                        del st.session_state['edit_answer_id']
+                    if 'edit_answer_content' in st.session_state:
+                        del st.session_state['edit_answer_content']
+                    st.rerun()
+                    
+            else:
+                st.error("❌ 질문을 찾을 수 없습니다.")
+                if st.button("🔙 돌아가기"):
+                    del st.session_state['selected_question_id']
+                    st.rerun()
+        except Exception as e:
+            st.error(f"❌ 질문을 불러오는 중 오류가 발생했습니다: {e}")
+    
     with tab2:
-        st.markdown("### 새로운 질문 등록")
+        # 질문 수정 모드 확인
+        edit_question_id = st.session_state.get('edit_question_id', None)
+        
+        if edit_question_id:
+            st.markdown("### ✏️ 질문 수정")
+            
+            # 기존 질문 데이터 가져오기
+            try:
+                conn = st.session_state.db_manager.get_connection()
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT title, question, category, question_type 
+                    FROM qna_board WHERE id = %s
+                """, (edit_question_id,))
+                question_data = cursor.fetchone()
+                cursor.close()
+                conn.close()
+                
+                if question_data:
+                    current_title, current_content, current_category, current_type = question_data
+                    
+                    with st.form("edit_question_form"):
+                        question_title = st.text_input("제목", value=current_title)
+                        question_content = st.text_area("질문 내용", value=current_content, height=150)
+                        question_category = st.selectbox("카테고리", 
+                            ["데이터베이스", "네트워크", "보안", "애플리케이션", "시스템"],
+                            index=["데이터베이스", "네트워크", "보안", "애플리케이션", "시스템"].index(current_category) if current_category in ["데이터베이스", "네트워크", "보안", "애플리케이션", "시스템"] else 0)
+                        question_type = st.selectbox("질문 유형", ["issue", "manual"],
+                            index=0 if current_type == "issue" else 1)
+                        
+                        col1, col2 = st.columns([1, 1])
+                        with col1:
+                            if st.form_submit_button("✅ 수정 완료", type="primary"):
+                                user = st.session_state.get('current_user', None)
+                                if user and len(user) > 0:
+                                    user_id = user[0]
+                                    if st.session_state.db_manager.update_qna_question(
+                                        edit_question_id, question_title, question_content, 
+                                        question_category, question_type, user_id):
+                                        st.success("✅ 질문이 성공적으로 수정되었습니다!")
+                                        del st.session_state['edit_question_id']
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ 질문 수정에 실패했습니다.")
+                                else:
+                                    st.error("❌ 로그인이 필요합니다.")
+                        with col2:
+                            if st.form_submit_button("❌ 취소"):
+                                del st.session_state['edit_question_id']
+                                st.rerun()
+                else:
+                    st.error("❌ 질문을 찾을 수 없습니다.")
+                    if st.button("🔙 돌아가기"):
+                        del st.session_state['edit_question_id']
+                        st.rerun()
+            except Exception as e:
+                st.error(f"❌ 질문 데이터를 불러오는 중 오류가 발생했습니다: {e}")
+        else:
+            st.markdown("### 새로운 질문 등록")
         
         # 챗봇에서 넘어온 미리 채워진 질문 확인
         pre_filled_question = st.session_state.get('qna_question', '')

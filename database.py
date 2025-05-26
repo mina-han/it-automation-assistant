@@ -634,3 +634,122 @@ class DatabaseManager:
             return answer_id
         except Exception as e:
             return None
+
+    def update_qna_question(self, question_id, title, question, category, question_type, user_id):
+        """Update QnA question (only by original questioner)"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # Check if user is the original questioner
+            cursor.execute("SELECT questioner_id FROM qna_board WHERE id = %s", (question_id,))
+            result = cursor.fetchone()
+            if not result or result[0] != user_id:
+                cursor.close()
+                conn.close()
+                return False
+            
+            cursor.execute("""
+                UPDATE qna_board 
+                SET title = %s, question = %s, category = %s, question_type = %s
+                WHERE id = %s AND questioner_id = %s
+            """, (title, question, category, question_type, question_id, user_id))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+        except Exception as e:
+            return False
+
+    def delete_qna_question(self, question_id, user_id):
+        """Delete QnA question (only by original questioner)"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # Check if user is the original questioner
+            cursor.execute("SELECT questioner_id FROM qna_board WHERE id = %s", (question_id,))
+            result = cursor.fetchone()
+            if not result or result[0] != user_id:
+                cursor.close()
+                conn.close()
+                return False
+            
+            # Delete answers first
+            cursor.execute("DELETE FROM qna_answers WHERE question_id = %s", (question_id,))
+            
+            # Delete question
+            cursor.execute("DELETE FROM qna_board WHERE id = %s", (question_id,))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+        except Exception as e:
+            return False
+
+    def update_qna_answer(self, answer_id, content, user_id):
+        """Update QnA answer (only by original author)"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # Check if user is the original author
+            cursor.execute("SELECT author_id FROM qna_answers WHERE id = %s", (answer_id,))
+            result = cursor.fetchone()
+            if not result or result[0] != user_id:
+                cursor.close()
+                conn.close()
+                return False
+            
+            cursor.execute("""
+                UPDATE qna_answers 
+                SET content = %s
+                WHERE id = %s AND author_id = %s
+            """, (content, answer_id, user_id))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+        except Exception as e:
+            return False
+
+    def delete_qna_answer(self, answer_id, user_id):
+        """Delete QnA answer (only by original author)"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # Check if user is the original author
+            cursor.execute("SELECT author_id, question_id FROM qna_answers WHERE id = %s", (answer_id,))
+            result = cursor.fetchone()
+            if not result or result[0] != user_id:
+                cursor.close()
+                conn.close()
+                return False
+            
+            question_id = result[1]
+            
+            # Delete answer
+            cursor.execute("DELETE FROM qna_answers WHERE id = %s", (answer_id,))
+            
+            # Check if there are remaining answers
+            cursor.execute("SELECT COUNT(*) FROM qna_answers WHERE question_id = %s", (question_id,))
+            answer_count = cursor.fetchone()[0]
+            
+            # If no answers left, update question status to pending
+            if answer_count == 0:
+                cursor.execute("""
+                    UPDATE qna_board 
+                    SET status = 'pending', answered_at = NULL
+                    WHERE id = %s
+                """, (question_id,))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+        except Exception as e:
+            return False
