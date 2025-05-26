@@ -1,0 +1,138 @@
+ # Display chat history
+    if st.session_state.chat_history:
+        st.markdown("### 💬 대화 내역")
+        for i, (user_msg, bot_msg) in enumerate(st.session_state.chat_history):
+            with st.container():
+                st.markdown(f"**👤 사용자:** {user_msg}")
+                
+                # QnA 버튼이 포함된 응답 처리
+                if "|QNA_BUTTONS" in bot_msg:
+                    base_message = bot_msg.split("|QNA_BUTTONS")[0]
+                    
+                    # 메시지에서 관련 유사 이슈들 부분과 나머지 분리
+                    if "📚 **관련 유사 이슈들:**" in base_message:
+                        parts = base_message.split("📚 **관련 유사 이슈들:**")
+                        main_message = parts[0]
+                        related_issues_section = "📚 **관련 유사 이슈들:**" + parts[1]
+                        
+                        st.markdown(f"**🤖 물어보SHOO:** {main_message}")
+                        st.markdown(related_issues_section)
+                        
+                        # 관련 유사 이슈들 바로 밑에 QnA 등록 버튼들 표시
+                        col1, col2 = st.columns([1, 1])
+                        with col1:
+                            if st.button("✅ 예", key=f"qna_yes_{i}", type="primary", use_container_width=True):
+                                # QnA 게시판에 질문 등록 (임시 테스트용 ID 5 사용)
+                                question_id = st.session_state.db_manager.add_qna_question_from_chat(
+                                    user_msg, 5  # 임시 테스트용 ID
+                                )
+                                if question_id:
+                                    # 제목 생성 (앞 20자)
+                                    title = user_msg[:20] + ('...' if len(user_msg) > 20 else '')
+                                    st.success(f"✅ 질문이 QnA 게시판에 등록되었습니다!")
+                                    st.info(f"📝 제목: {title}")
+                                    st.info(f"📊 카테고리: 데이터베이스 | 유형: issue | 상태: 대기중")
+                                    st.info("🎉 질문 등록으로 2점의 경험치를 획득했습니다!")
+                                    # 버튼 제거를 위해 메시지 업데이트
+                                    st.session_state.chat_history[i] = (user_msg, base_message)
+                                else:
+                                    st.error("❌ 질문 등록 중 오류가 발생했습니다.")
+                                st.rerun()
+                        with col2:
+                            if st.button("❌ 아니오", key=f"qna_no_{i}", use_container_width=True):
+                                # 버튼 제거를 위해 메시지 업데이트
+                                st.session_state.chat_history[i] = (user_msg, base_message)
+                                st.rerun()
+                    else:
+                        st.markdown(f"**🤖 물어보SHOO:** {base_message}")
+                        
+                        # QnA 등록 버튼들 표시
+                        col1, col2 = st.columns([1, 1])
+                        with col1:
+                            if st.button("✅ 예", key=f"qna_yes_{i}", type="primary", use_container_width=True):
+                                # QnA 게시판에 질문 등록 (임시 테스트용 ID 5 사용)
+                                question_id = st.session_state.db_manager.add_qna_question_from_chat(
+                                    user_msg, 5  # 임시 테스트용 ID
+                                )
+                                if question_id:
+                                    # 제목 생성 (앞 20자)
+                                    title = user_msg[:20] + ('...' if len(user_msg) > 20 else '')
+                                    st.success(f"✅ 질문이 QnA 게시판에 등록되었습니다!")
+                                    st.info(f"📝 제목: {title}")
+                                    st.info(f"📊 카테고리: 데이터베이스 | 유형: issue | 상태: 대기중")
+                                    st.info("🎉 질문 등록으로 2점의 경험치를 획득했습니다!")
+                                    # 버튼 제거를 위해 메시지 업데이트
+                                    st.session_state.chat_history[i] = (user_msg, base_message)
+                                else:
+                                    st.error("❌ 질문 등록 중 오류가 발생했습니다.")
+                                st.rerun()
+                        with col2:
+                            if st.button("❌ 아니오", key=f"qna_no_{i}", use_container_width=True):
+                                # 버튼 제거를 위해 메시지 업데이트
+                                st.session_state.chat_history[i] = (user_msg, base_message)
+                                st.rerun()
+                
+                # 지식 등록 버튼이 포함된 응답 처리
+                elif "|KNOWLEDGE_BUTTONS" in bot_msg:
+                    base_message = bot_msg.split("|KNOWLEDGE_BUTTONS")[0]
+                    st.markdown(f"**🤖 물어보SHOO:** {base_message}")
+                    
+                    # 지식 등록 버튼들 표시
+                    col1, col2 = st.columns([1, 1])
+                    with col1:
+                        if st.button("✅ 예", key=f"knowledge_yes_{i}", use_container_width=True):
+                            # 기존 지식 등록 로직
+                            user = st.session_state.get('current_user', None)
+                            if user and isinstance(user, (list, tuple)) and len(user) > 0:
+                                user_id = user[0]
+                                question_title = f"{user_msg[:50]}{'...' if len(user_msg) > 50 else ''}"
+                                question_type = "manual" if "매뉴얼" in base_message else "issue"
+                                question_id = st.session_state.db_manager.add_qna_question(
+                                    question_title, user_msg, "기타", question_type, user_id
+                                )
+                                if question_id:
+                                    st.success("✅ QnA 게시판에 질문이 등록되었습니다! (+2 경험치)")
+                                    st.info("🎯 QnA 게시판에서 등록된 질문을 확인하세요!")
+                                    st.session_state.current_page = "❓ QnA 게시판"
+                                    # 버튼 제거를 위해 메시지 업데이트
+                                    st.session_state.chat_history[i] = (user_msg, base_message)
+                                    st.rerun()
+                                else:
+                                    st.error("❌ 질문 등록 중 오류가 발생했습니다.")
+                            else:
+                                st.error("❌ 로그인이 필요합니다.")
+                    with col2:
+                        if st.button("❌ 아니오", key=f"knowledge_no_{i}", use_container_width=True):
+                            st.info("💭 나중에 필요하시면 언제든 QnA 게시판이나 업무 지식 등록을 이용해주세요!")
+                            # 버튼 제거를 위해 메시지 업데이트
+                            st.session_state.chat_history[i] = (user_msg, base_message)
+                            st.rerun()
+                
+                # 일반 응답
+                else:
+                    st.markdown(f"**🤖 물어보SHOO:** {bot_msg}")
+                
+                if i < len(st.session_state.chat_history) - 1:
+                    st.markdown("---")
+        st.markdown("---")
+    else:
+        st.info("💡 새로운 대화를 시작해보세요! 이전 대화 내역이 기억되어 연속적인 질문이 가능합니다.")
+    
+    # Chat input
+    user_input = st.text_input("질문을 입력하세요:", key="chat_input", placeholder="예: 데이터베이스 서버가 느려질 때 어떻게 해야 하나요?")
+    
+    col1, col2, col3 = st.columns([1, 3, 1])
+    with col1:
+        if st.button("전송", type="primary"):
+            if user_input.strip():
+                with st.spinner("답변을 생성하고 있습니다..."):
+                    # Add conversation context to the chatbot
+                    response = st.session_state.chatbot.get_response_with_context(
+                        user_input, 
+                        st.session_state.conversation_context
+                    )
+                    
+                    # Update conversation context
+                    st.session_state.conversation_context.append({
+                        "user": user_input,
+                        "as

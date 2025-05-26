@@ -93,14 +93,40 @@ class ChatBot:
             if conversation_context:
                 bot_response = f"💭 *이전 대화를 기억하며 답변드립니다*\n\n{bot_response}"
             
+            # Check if all related issues have 100% similarity (exact matches)
+            has_perfect_matches = related_issues and all(issue['similarity'] >= 1.0 for issue in related_issues)
+            
             # Add related issues information to response if available
             if related_issues:
                 bot_response += f"\n\n📚 **관련 유사 이슈들:**\n"
                 for issue in related_issues[:3]:  # Show top 3
                     bot_response += f"• {issue['title']} (유사도: {issue['similarity']:.0%})\n"
             
-            # Add knowledge registration suggestion if needed
-            if registration_analysis.get("should_suggest", False):
+            # Remove inappropriate responses for perfect matches
+            if has_perfect_matches:
+                # Remove "단계나 절차가 포함되어 있지 않습니다" type messages
+                unwanted_phrases = [
+                    "죄송합니다. 제공된 정보에는",
+                    "단계나 절차가 포함되어 있지 않습니다",
+                    "구체적인 해결 방법이 명시되어 있지 않습니다",
+                    "자세한 내용이 없습니다"
+                ]
+                for phrase in unwanted_phrases:
+                    if phrase in bot_response:
+                        # Replace the problematic sentence with more helpful response
+                        sentences = bot_response.split('.')
+                        filtered_sentences = []
+                        for sentence in sentences:
+                            if not any(unwanted in sentence for unwanted in unwanted_phrases):
+                                filtered_sentences.append(sentence)
+                        bot_response = '.'.join(filtered_sentences)
+                        break
+                
+                # Don't suggest knowledge registration for perfect matches
+                registration_analysis["should_suggest"] = False
+            
+            # Add knowledge registration suggestion if needed (only if not perfect matches)
+            if registration_analysis.get("should_suggest", False) and not has_perfect_matches:
                 suggestion_type = registration_analysis.get("type", "issue")
                 reason = registration_analysis.get("reason", "")
                 
