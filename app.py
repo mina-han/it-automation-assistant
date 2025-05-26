@@ -40,6 +40,65 @@ st.markdown("""
         margin-bottom: 1rem;
         border: 2px solid #E3F2FD;
     }
+    
+    .knowledge-card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        border: 2px solid #87CEEB;
+        margin-bottom: 16px;
+        box-shadow: 0 2px 8px rgba(135, 206, 235, 0.1);
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    
+    .knowledge-card:hover {
+        border-color: #4682B4;
+        box-shadow: 0 4px 12px rgba(135, 206, 235, 0.2);
+        transform: translateY(-2px);
+    }
+    
+    .knowledge-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #2C3E50;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .knowledge-preview {
+        color: #555;
+        font-size: 0.95rem;
+        line-height: 1.4;
+        margin-bottom: 12px;
+    }
+    
+    .knowledge-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+    }
+    
+    .knowledge-tag {
+        background: #E3F2FD;
+        color: #1976D2;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .knowledge-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 12px;
+        font-size: 0.85rem;
+        color: #666;
+    }
     .issue-title {
         font-size: 1.3rem;
         font-weight: bold;
@@ -278,17 +337,18 @@ elif page == "📝 업무 지식 등록":
                 st.markdown(f'<div class="issue-keywords">키워드: {" ".join([f"#{kw}" for kw in keywords])}</div>', unsafe_allow_html=True)
                 
                 st.markdown('</div>', unsafe_allow_html=True)
-                
-                # Navigation buttons outside the form
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button("대화하기", key="goto_chat"):
-                        st.session_state.page = "💬 대화하기"
-                        st.rerun()
-                with col2:
-                    if st.button("업무 지식 전체 조회", key="goto_knowledge"):
-                        st.session_state.page = "🔍 업무 지식 조회"
-                        st.rerun()
+    
+    # Navigation buttons outside the form
+    if submitted and title and content:
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("대화하기", key="goto_chat"):
+                st.session_state.current_page = "💬 대화하기"
+                st.rerun()
+        with col2:
+            if st.button("업무 지식 전체 조회", key="goto_knowledge"):
+                st.session_state.current_page = "🔍 업무 지식 조회"
+                st.rerun()
 
 elif page == "🔍 업무 지식 조회":
     st.header("🔍 업무 지식 조회")
@@ -312,39 +372,56 @@ elif page == "🔍 업무 지식 조회":
         for knowledge in knowledge_list:
             knowledge_id, title, content, keywords_str, knowledge_type, view_count, created_at = knowledge
             
-            # Create knowledge card
-            st.markdown('<div class="issue-card">', unsafe_allow_html=True)
-            
-            col1, col2 = st.columns([4, 1])
-            with col1:
-                # Knowledge type badge
-                type_color = "#4CAF50" if knowledge_type == "메뉴얼" else "#2196F3"
-                st.markdown(f'<span style="background-color: {type_color}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem;">{knowledge_type}</span>', unsafe_allow_html=True)
-                
-                if st.button(f"📄 {title}", key=f"knowledge_{knowledge_id}"):
-                    # Increment view count
-                    st.session_state.db_manager.increment_view_count(knowledge_id)
-                    
-                    # Show knowledge details
-                    st.markdown("### 📋 업무 지식 상세")
-                    st.markdown(f"**제목:** {title}")
-                    st.markdown(f"**구분:** {knowledge_type}")
-                    st.markdown(f"**내용:**\n{content}")
-                    st.markdown(f"**조회수:** {view_count + 1}")
-                    st.markdown(f"**등록일:** {created_at}")
-            
-            with col2:
-                st.markdown(f'<div class="view-count">조회수: {view_count}</div>', unsafe_allow_html=True)
-            
-            # Show preview
+            # Create modern knowledge card
             preview = content[:100] + "..." if len(content) > 100 else content
-            st.markdown(f"**미리보기:** {preview}")
             
+            # Knowledge type badge color
+            type_color = "#4CAF50" if knowledge_type == "메뉴얼" else "#2196F3"
+            
+            card_html = f'''
+            <div class="knowledge-card">
+                <div class="knowledge-title">
+                    <span style="background-color: {type_color}; color: white; padding: 4px 10px; border-radius: 15px; font-size: 0.8rem; margin-right: 8px;">{knowledge_type}</span>
+                    📄 {title}
+                </div>
+                <div class="knowledge-preview">{preview}</div>
+            '''
+            
+            # Add keywords as tags
             if keywords_str:
                 keywords = keywords_str.split(',')
-                st.markdown(f'<div class="issue-keywords">🏷️ {" ".join([f"#{kw.strip()}" for kw in keywords])}</div>', unsafe_allow_html=True)
+                tags_html = '<div class="knowledge-tags">'
+                for kw in keywords:
+                    tags_html += f'<span class="knowledge-tag">#{kw.strip()}</span>'
+                tags_html += '</div>'
+                card_html += tags_html
             
-            st.markdown('</div>', unsafe_allow_html=True)
+            # Add metadata
+            card_html += f'''
+                <div class="knowledge-meta">
+                    <span>등록일: {created_at.strftime("%Y-%m-%d") if created_at else "정보 없음"}</span>
+                    <span>조회수: {view_count}</span>
+                </div>
+            </div>
+            '''
+            
+            st.markdown(card_html, unsafe_allow_html=True)
+            
+            # Add click functionality with button (hidden visually but functional)
+            if st.button(f"상세보기_{knowledge_id}", key=f"knowledge_{knowledge_id}", label_visibility="collapsed"):
+                # Increment view count
+                st.session_state.db_manager.increment_view_count(knowledge_id)
+                
+                # Show knowledge details in expander
+                with st.expander(f"📋 {title} - 상세 내용", expanded=True):
+                    st.markdown(f"**구분:** {knowledge_type}")
+                    st.markdown(f"**내용:**")
+                    st.markdown(content)
+                    if keywords_str:
+                        keywords = keywords_str.split(',')
+                        st.markdown(f"**키워드:** {' '.join([f'#{kw.strip()}' for kw in keywords])}")
+                    st.markdown(f"**조회수:** {view_count + 1}")
+                    st.markdown(f"**등록일:** {created_at}")
     else:
         st.info("등록된 업무 지식이 없습니다. 새로운 지식을 등록해보세요!")
 
