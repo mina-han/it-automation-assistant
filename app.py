@@ -112,7 +112,7 @@ with col2:
 st.sidebar.title("📋 메뉴")
 page = st.sidebar.radio(
     "기능 선택",
-    ["💬 대화하기", "📝 업무 지식 등록", "🔍 업무 지식 조회"],
+    ["💬 대화하기", "📝 업무 지식 등록", "🔍 업무 지식 조회", "📋 나의 대화 이력"],
     index=0
 )
 
@@ -221,6 +221,9 @@ elif page == "📝 업무 지식 등록":
                 st.markdown(f"**요약:** {summary}")
                 st.markdown(f'<div class="issue-keywords">키워드: {" ".join([f"#{kw}" for kw in keywords])}</div>', unsafe_allow_html=True)
                 
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                # Navigation buttons outside the form
                 col1, col2 = st.columns(2)
                 with col1:
                     if st.button("대화하기", key="goto_chat"):
@@ -230,8 +233,6 @@ elif page == "📝 업무 지식 등록":
                     if st.button("업무 지식 전체 조회", key="goto_knowledge"):
                         st.session_state.page = "🔍 업무 지식 조회"
                         st.rerun()
-                
-                st.markdown('</div>', unsafe_allow_html=True)
 
 elif page == "🔍 업무 지식 조회":
     st.header("🔍 업무 지식 조회")
@@ -294,11 +295,80 @@ elif page == "🔍 업무 지식 조회":
     else:
         st.info("등록된 업무 지식이 없습니다. 새로운 지식을 등록해보세요!")
 
+elif page == "📋 나의 대화 이력":
+    st.header("📋 나의 대화 이력")
+    
+    # Control buttons
+    col1, col2, col3 = st.columns([1, 1, 2])
+    with col1:
+        if st.button("🔄 새로고침", key="refresh_history"):
+            st.rerun()
+    with col2:
+        if st.button("🗑️ 전체 삭제", key="clear_all_history"):
+            st.session_state.db_manager.clear_all_chat_history()
+            st.success("모든 대화 이력이 삭제되었습니다.")
+            st.rerun()
+    
+    # Get chat history from database
+    chat_history = st.session_state.db_manager.get_chat_history(limit=50)
+    
+    if chat_history:
+        st.markdown(f"**총 {len(chat_history)}개의 대화가 기록되어 있습니다.**")
+        
+        for history in chat_history:
+            history_id, user_message, bot_response, related_knowledge_json, created_at = history
+            
+            # Create chat history card
+            st.markdown('<div class="issue-card">', unsafe_allow_html=True)
+            
+            # Header with timestamp and delete button
+            col1, col2 = st.columns([4, 1])
+            with col1:
+                # Format timestamp
+                timestamp = created_at.strftime("%Y년 %m월 %d일 %H:%M:%S") if created_at else "시간 정보 없음"
+                st.markdown(f"**🕒 {timestamp}**")
+            with col2:
+                if st.button("삭제", key=f"delete_history_{history_id}"):
+                    st.session_state.db_manager.delete_chat_history(history_id)
+                    st.success("대화 이력이 삭제되었습니다.")
+                    st.rerun()
+            
+            # User message
+            st.markdown("**👤 사용자:**")
+            st.markdown(f'<div style="background-color: #f0f2f6; padding: 10px; border-radius: 10px; margin: 5px 0;">{user_message}</div>', unsafe_allow_html=True)
+            
+            # Bot response
+            st.markdown("**🤖 SHOO:**")
+            st.markdown(f'<div style="background-color: #e8f4f8; padding: 10px; border-radius: 10px; margin: 5px 0;">{bot_response}</div>', unsafe_allow_html=True)
+            
+            # Related knowledge if exists
+            if related_knowledge_json:
+                try:
+                    import json
+                    related_knowledge = json.loads(related_knowledge_json)
+                    if related_knowledge:
+                        st.markdown("**🔗 관련 업무 지식:**")
+                        for knowledge in related_knowledge:
+                            knowledge_title = knowledge.get('title', '제목 없음')
+                            similarity = knowledge.get('similarity', 0)
+                            st.markdown(f"- {knowledge_title} (유사도: {similarity:.2f})")
+                except:
+                    pass
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
+    else:
+        st.info("아직 대화 이력이 없습니다. 대화하기에서 SHOO와 대화를 시작해보세요!")
+        
+        if st.button("💬 대화하러 가기", key="goto_chat_from_history"):
+            st.session_state.page = "💬 대화하기"
+            st.rerun()
+
 # Footer
 st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: #888; padding: 1rem;'>"
-    "🤖 물어보SHOO - IT 실무자를 위한 자연어 이슈 검색/기록 도우미<br>"
+    "🤖 물어보SHOO - IT 실무자를 위한 업무 지식 도우미<br>"
     "Powered by OpenAI & PostgreSQL"
     "</div>",
     unsafe_allow_html=True

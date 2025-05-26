@@ -289,3 +289,62 @@ class DatabaseManager:
             
         except Exception as e:
             logger.error(f"Failed to save chat history: {e}")
+    
+    def get_chat_history(self, limit=50):
+        """Retrieve chat history with limit"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT id, user_message, bot_response, related_knowledge, created_at
+                FROM chat_history
+                ORDER BY created_at DESC
+                LIMIT %s
+            """, (limit,))
+            
+            history = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            
+            return history
+            
+        except Exception as e:
+            logger.error(f"Failed to retrieve chat history: {e}")
+            return []
+    
+    def delete_chat_history(self, history_id):
+        """Delete specific chat history entry"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                DELETE FROM chat_history WHERE id = %s
+            """, (history_id,))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            logger.info(f"Chat history {history_id} deleted successfully")
+            
+        except Exception as e:
+            logger.error(f"Failed to delete chat history {history_id}: {e}")
+    
+    def clear_all_chat_history(self):
+        """Clear all chat history"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute("DELETE FROM chat_history")
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            logger.info("All chat history cleared successfully")
+            
+        except Exception as e:
+            logger.error(f"Failed to clear chat history: {e}")
