@@ -136,33 +136,24 @@ if 'current_page' not in st.session_state:
     st.session_state.current_page = "💬 대화하기"
 
 # Main header with logo and branding
-st.markdown('<div class="mascot-header">', unsafe_allow_html=True)
-
-# Create horizontal layout with text and image
-st.markdown("""
-<div style="display: flex; align-items: center; justify-content: center; margin: 2rem 0; padding: 2rem; background: linear-gradient(135deg, #f5f1eb 0%, #e8dcc6 100%); border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-    <div style="width: 70%; padding-right: 2rem;">
-        <div style="font-size: 2.5rem; font-weight: bold; color: #B5A081; margin-bottom: 10px;">물어보 SHOO</div>
-        <div style="font-size: 1.2rem; color: #666; line-height: 1.4;">IT 실무자를 위한 업무 지식 도우미</div>
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    st.markdown('<div class="mascot-header">', unsafe_allow_html=True)
+    
+    # Display logo with SHOO character
+    st.markdown("""
+    <div style="text-align: center; margin-bottom: 20px;">
+        <div style="font-size: 2.5rem; font-weight: bold; color: #B5A081; margin-bottom: 15px;">물어보 SHOO</div>
+        <div style="font-size: 1rem; color: #888; margin-bottom: 20px;">IT 실무자를 위한 업무 지식 도우미</div>
+    """, unsafe_allow_html=True)
+    
+    # Display new SHOO character image
+    st.image("attached_assets/image_1748219961365.png", width=150)
+    
+    st.markdown("""
     </div>
-    <div style="width: 30%; display: flex; justify-content: center;">
-        <img src="data:image/png;base64,""", unsafe_allow_html=True)
-
-# Convert image to base64 for inline display
-import base64
-try:
-    with open("attached_assets/image_1748219961365.png", "rb") as img_file:
-        img_data = base64.b64encode(img_file.read()).decode()
-    st.markdown(f'{img_data}" style="max-width: 100%; height: auto; border-radius: 10px;" alt="SHOO Character">', unsafe_allow_html=True)
-except:
-    st.markdown('🤖" style="font-size: 4rem;">', unsafe_allow_html=True)
-
-st.markdown("""
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-st.markdown('</div>', unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # Modern Sidebar Navigation
 with st.sidebar:
