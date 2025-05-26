@@ -405,25 +405,26 @@ elif page == "🔍 업무 지식 조회":
             </div>
             '''
             
+            # Display the card HTML first
             st.markdown(card_html, unsafe_allow_html=True)
             
-            # Add click functionality with button
-            col1, col2 = st.columns([4, 1])
-            with col2:
-                if st.button("상세보기", key=f"knowledge_{knowledge_id}"):
-                    # Increment view count
-                    st.session_state.db_manager.increment_view_count(knowledge_id)
-                    
-                    # Show knowledge details in expander
-                    with st.expander(f"📋 {title} - 상세 내용", expanded=True):
-                        st.markdown(f"**구분:** {knowledge_type}")
-                        st.markdown(f"**내용:**")
-                        st.markdown(content)
-                        if keywords_str:
-                            keywords = keywords_str.split(',')
-                            st.markdown(f"**키워드:** {' '.join([f'#{kw.strip()}' for kw in keywords])}")
-                        st.markdown(f"**조회수:** {view_count + 1}")
-                        st.markdown(f"**등록일:** {created_at}")
+            # Make the card clickable using expander
+            if st.button(f"📄 {title} 자세히 보기", key=f"knowledge_{knowledge_id}", use_container_width=True):
+                # Increment view count when clicked
+                st.session_state.db_manager.increment_view_count(knowledge_id)
+                
+                # Show full knowledge details in a modal-like container
+                st.markdown("---")
+                st.markdown(f"### 📋 {title}")
+                st.markdown(f"**구분:** {knowledge_type}")
+                st.markdown(f"**전체 내용:**")
+                st.markdown(content)
+                if keywords_str:
+                    keywords = keywords_str.split(',')
+                    st.markdown(f"**키워드:** {' '.join([f'#{kw.strip()}' for kw in keywords])}")
+                st.markdown(f"**조회수:** {view_count + 1}")
+                st.markdown(f"**등록일:** {created_at}")
+                st.markdown("---")
     else:
         st.info("등록된 업무 지식이 없습니다. 새로운 지식을 등록해보세요!")
 
