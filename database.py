@@ -131,8 +131,8 @@ class DatabaseManager:
             logger.error(f"Database initialization failed: {e}")
             raise
     
-    def add_knowledge(self, title, content, keywords, knowledge_type="이슈"):
-        """Add new work knowledge to the database"""
+    def add_knowledge(self, title, content, keywords, knowledge_type="이슈", user_id=None):
+        """Add new work knowledge to the database and award points"""
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
@@ -140,12 +140,17 @@ class DatabaseManager:
             keywords_str = ','.join(keywords) if keywords else ''
             
             cursor.execute("""
-                INSERT INTO work_knowledge (title, content, keywords, knowledge_type)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO work_knowledge (title, content, keywords, knowledge_type, user_id)
+                VALUES (%s, %s, %s, %s, %s)
                 RETURNING id
-            """, (title, content, keywords_str, knowledge_type))
+            """, (title, content, keywords_str, knowledge_type, user_id))
             
             knowledge_id = cursor.fetchone()[0]
+            
+            # Award 5 points for adding knowledge
+            if user_id:
+                self.update_user_experience(user_id, 5)
+            
             conn.commit()
             cursor.close()
             conn.close()
@@ -512,3 +517,105 @@ class DatabaseManager:
             return cursor.rowcount > 0
         except Exception as e:
             return False
+    
+    # QnA Board functions
+    def add_qna_question(self, title, question, category, question_type, questioner_id):
+        """Add new QnA question and award points"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO qna_board (title, question, category, question_type, questioner_id)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING id
+            """, (title, question, category, question_type, questioner_id))
+            question_id = cursor.fetchone()[0]
+            
+            # Award 2 points for asking a question
+            self.update_user_experience(questioner_id, 2)
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return question_id
+        except Exception as e:
+            return None
+    
+    def get_qna_questions(self, category=None, question_type=None):
+        """Get QnA questions with filters"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            base_query = """
+                SELECT q.id, q.title, q.question, q.category, q.question_type, 
+                       q.status, q.created_at, u.name as questioner_name,
+                       (SELECT COUNT(*) FROM qna_answers a WHERE a.question_id = q.id) as answer_count
+                FROM qna_board q
+                LEFT JOIN users u ON q.questioner_id = u.id
+            """
+            
+            conditions = []
+            params = []
+            
+            if category:
+                conditions.append("q.category = %s")
+                params.append(category)
+            if question_type:
+                conditions.append("q.question_type = %s")
+                params.append(question_type)
+            
+            if conditions:
+                base_query += " WHERE " + " AND ".join(conditions)
+            
+            base_query += " ORDER BY q.created_at DESC"
+            
+            cursor.execute(base_query, params)
+            questions = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return questions
+        except Exception as e:
+            return []
+    
+    def get_qna_answers(self, question_id):
+        """Get answers for a specific question"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT a.id, a.content, a.created_at, a.is_accepted,
+                       u.name as answerer_name, u.department
+                FROM qna_answers a
+                LEFT JOIN users u ON a.author_id = u.id
+                WHERE a.question_id = %s
+                ORDER BY a.is_accepted DESC, a.created_at ASC
+            """, (question_id,))
+            answers = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return answers
+        except Exception as e:
+            return []
+    
+    def add_qna_answer(self, question_id, content, author_id):
+        """Add answer to QnA question"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO qna_answers (question_id, content, author_id)
+                VALUES (%s, %s, %s)
+                RETURNING id
+            """, (question_id, content, author_id))
+            answer_id = cursor.fetchone()[0]
+            
+            # Award 3 points for answering a question
+            self.update_user_experience(author_id, 3)
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return answer_id
+        except Exception as e:
+            return None

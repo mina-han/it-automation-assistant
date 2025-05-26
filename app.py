@@ -339,19 +339,24 @@ col1, col2, col3 = st.columns([1, 2, 1])
 with col1:
     # Display user info safely
     user = st.session_state.current_user
-    if user and len(user) >= 6:
+    if user:
         try:
             # user structure: (id, username, name, department, experience_points, level)
+            name = user[2] if len(user) > 2 else "사용자"
+            department = user[3] if len(user) > 3 else "부서 없음"
+            experience = user[4] if len(user) > 4 else 0
+            level = user[5] if len(user) > 5 else 1
+            
             st.markdown(f"""
             <div style="background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%); 
                         padding: 10px; border-radius: 10px; margin-bottom: 10px;
                         border: 1px solid #90CAF9;">
-                <div style="font-size: 0.9rem; color: #1976D2; font-weight: bold;">👤 {user[2]}</div>
-                <div style="font-size: 0.8rem; color: #666;">🏢 {user[3]}</div>
-                <div style="font-size: 0.8rem; color: #666;">⭐ Lv.{user[5]} ({user[4]}점)</div>
+                <div style="font-size: 0.9rem; color: #1976D2; font-weight: bold;">👤 {name}</div>
+                <div style="font-size: 0.8rem; color: #666;">🏢 {department}</div>
+                <div style="font-size: 0.8rem; color: #666;">⭐ Lv.{level} ({experience}점)</div>
             </div>
             """, unsafe_allow_html=True)
-        except (IndexError, TypeError):
+        except (IndexError, TypeError, KeyError):
             st.markdown("**👤 로그인된 사용자**")
     
     # Account management buttons in the bottom left
@@ -391,6 +396,9 @@ with st.sidebar:
         {"icon": "💬", "label": "대화하기", "value": "💬 대화하기"},
         {"icon": "📝", "label": "업무 지식 등록", "value": "📝 업무 지식 등록"},
         {"icon": "🔍", "label": "업무 지식 조회", "value": "🔍 업무 지식 조회"},
+        {"icon": "❓", "label": "QnA 게시판", "value": "❓ QnA 게시판"},
+        {"icon": "👤", "label": "나의 정보", "value": "👤 나의 정보"},
+        {"icon": "🏆", "label": "대시보드", "value": "🏆 대시보드"},
         {"icon": "📋", "label": "나의 대화 이력", "value": "📋 나의 대화 이력"}
     ]
     
@@ -489,8 +497,10 @@ elif page == "📝 업무 지식 등록":
                 keywords = extract_keywords(content)
                 summary = summarize_text(content)
                 
-                # Save to database
-                knowledge_id = st.session_state.db_manager.add_knowledge(title, content, keywords, knowledge_type)
+                # Save to database with user ID for points
+                user = st.session_state.current_user
+                user_id = user[0] if user else None
+                knowledge_id = st.session_state.db_manager.add_knowledge(title, content, keywords, knowledge_type, user_id)
                 
                 # Update RAG embeddings
                 st.session_state.rag_engine.add_document(knowledge_id, title, content)
