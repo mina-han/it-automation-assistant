@@ -929,6 +929,7 @@ elif page == "🔍 업무 지식 조회":
                             st.markdown(f"### 📋 {title}")
                         
                         # Check if user is the author of this knowledge
+                        is_author = False
                         try:
                             conn = st.session_state.db_manager.get_connection()
                             cursor = conn.cursor()
@@ -951,24 +952,24 @@ elif page == "🔍 업무 지식 조회":
                         # Edit/Delete options
                         if is_author and st.session_state.get(f'show_knowledge_edit_{knowledge_id}', False):
                             col1, col2 = st.columns(2)
-                        with col1:
-                            if st.button("✏️ 수정", key=f"edit_knowledge_{knowledge_id}"):
-                                st.session_state[f'editing_knowledge_{knowledge_id}'] = True
-                                st.session_state[f'show_knowledge_edit_{knowledge_id}'] = False
-                                st.rerun()
-                        with col2:
-                            if st.button("🗑️ 삭제", key=f"delete_knowledge_{knowledge_id}"):
-                                try:
-                                    conn = st.session_state.db_manager.get_connection()
-                                    cursor = conn.cursor()
-                                    cursor.execute("DELETE FROM work_knowledge WHERE id = %s AND user_id = %s", (knowledge_id, user_id))
-                                    conn.commit()
-                                    cursor.close()
-                                    conn.close()
-                                    st.success("업무 지식이 삭제되었습니다.")
+                            with col1:
+                                if st.button("✏️ 수정", key=f"edit_knowledge_{knowledge_id}"):
+                                    st.session_state[f'editing_knowledge_{knowledge_id}'] = True
+                                    st.session_state[f'show_knowledge_edit_{knowledge_id}'] = False
                                     st.rerun()
-                                except Exception as e:
-                                    st.error("삭제 중 오류가 발생했습니다.")
+                            with col2:
+                                if st.button("🗑️ 삭제", key=f"delete_knowledge_{knowledge_id}"):
+                                    try:
+                                        conn = st.session_state.db_manager.get_connection()
+                                        cursor = conn.cursor()
+                                        cursor.execute("DELETE FROM work_knowledge WHERE id = %s AND user_id = %s", (knowledge_id, user_id))
+                                        conn.commit()
+                                        cursor.close()
+                                        conn.close()
+                                        st.success("업무 지식이 삭제되었습니다.")
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error("삭제 중 오류가 발생했습니다.")
                     
                     # Edit form
                     if is_author and st.session_state.get(f'editing_knowledge_{knowledge_id}', False):
