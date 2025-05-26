@@ -4,6 +4,7 @@ from database import DatabaseManager
 from chatbot import ChatBot
 from rag_engine_simple import RAGEngine
 from utils import extract_keywords, summarize_text
+from file_processor import extract_text_from_file, get_file_info
 import os
 
 # Page configuration
@@ -230,8 +231,8 @@ if st.session_state.current_user is None:
         # Display SHOO character
         st.image("attached_assets/image_1748235445541.png", width=300)
         
-        # Login/Register tabs
-        tab1, tab2 = st.tabs(["로그인", "회원가입"])
+        # Login/Register/Password Reset tabs
+        tab1, tab2, tab3 = st.tabs(["로그인", "회원가입", "비밀번호 변경"])
         
         with tab1:
             st.markdown("### 🔑 로그인")
@@ -273,6 +274,38 @@ if st.session_state.current_user is None:
                                 st.error("이미 존재하는 아이디입니다.")
                             else:
                                 st.error("회원가입 중 오류가 발생했습니다.")
+                    else:
+                        st.error("모든 필드를 입력해주세요.")
+        
+        with tab3:
+            st.markdown("### 🔒 비밀번호 변경")
+            with st.form("password_reset_form"):
+                username = st.text_input("아이디")
+                old_password = st.text_input("현재 비밀번호", type="password")
+                new_password = st.text_input("새 비밀번호", type="password")
+                confirm_password = st.text_input("새 비밀번호 확인", type="password")
+                submitted = st.form_submit_button("비밀번호 변경", use_container_width=True)
+                
+                if submitted:
+                    if username and old_password and new_password and confirm_password:
+                        if new_password != confirm_password:
+                            st.error("새 비밀번호가 일치하지 않습니다.")
+                        elif len(new_password) < 4:
+                            st.error("새 비밀번호는 4자 이상이어야 합니다.")
+                        else:
+                            # 기존 비밀번호 확인
+                            user = st.session_state.db_manager.authenticate_user(username, old_password)
+                            if user:
+                                try:
+                                    success = st.session_state.db_manager.update_user_info(user[0], password=new_password)
+                                    if success:
+                                        st.success("✅ 비밀번호가 성공적으로 변경되었습니다!")
+                                    else:
+                                        st.error("❌ 비밀번호 변경에 실패했습니다.")
+                                except Exception as e:
+                                    st.error(f"❌ 오류가 발생했습니다: {e}")
+                            else:
+                                st.error("❌ 아이디 또는 현재 비밀번호가 올바르지 않습니다.")
                     else:
                         st.error("모든 필드를 입력해주세요.")
     
@@ -465,9 +498,9 @@ if page == "💬 대화하기":
                         st.error(f"대화 저장 중 오류가 발생했습니다: {e}")
                     
                     # 답변이 없을 때 QnA 등록 제안
-                    if "저장된 업무 지식이 없습니다" in response or "관련 정보를 찾을 수 없습니다" in response:
+                    if "저장된 업무 지식이 없습니다" in response or "관련 정보를 찾을 수 없습니다" in response or "현재 질문에 대한" in response:
                         st.markdown("---")
-                        st.markdown("### 💡 QnA 게시판에 새로 등록하시겠습니까?")
+                        st.markdown("### 💡 이 이슈(혹은 메뉴얼)에 대해 QnA 게시판의 질문으로 새로 등록하시겠습니까?")
                         st.markdown("현재 저장된 업무 지식에 없는 내용입니다. QnA 게시판에 질문으로 등록하여 다른 동료들의 도움을 받아보세요!")
                         
                         col1, col2 = st.columns([1, 1])
