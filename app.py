@@ -210,8 +210,87 @@ if 'current_user' not in st.session_state:
 if 'auth_mode' not in st.session_state:
     st.session_state.auth_mode = 'login'  # 'login' or 'register'
 
-# Main header with logo and branding
+# Check if user is logged in
+if st.session_state.current_user is None:
+    # Show login/register page
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("""
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h1 style="font-size: 2.8rem; font-weight: bold; color: #B5A081; margin-bottom: 0.5rem; 
+                       line-height: 1.2; text-shadow: 1px 1px 2px rgba(181, 160, 129, 0.3);">
+                물어보 SHOO
+            </h1>
+            <p style="font-size: 1rem; color: #888;">
+                IT 실무자를 위한 업무 지식 도우미
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Display SHOO character
+        st.image("attached_assets/image_1748219961365.png", width=200)
+        
+        # Login/Register tabs
+        tab1, tab2 = st.tabs(["로그인", "회원가입"])
+        
+        with tab1:
+            st.markdown("### 🔑 로그인")
+            with st.form("login_form"):
+                username = st.text_input("아이디")
+                password = st.text_input("비밀번호", type="password")
+                submitted = st.form_submit_button("로그인", use_container_width=True)
+                
+                if submitted:
+                    if username and password:
+                        user = st.session_state.db_manager.authenticate_user(username, password)
+                        if user:
+                            st.session_state.current_user = {
+                                'id': user[0],
+                                'username': user[1],
+                                'name': user[2],
+                                'department': user[3],
+                                'experience_points': user[4],
+                                'level': user[5]
+                            }
+                            st.success(f"환영합니다, {user[2]}님!")
+                            st.rerun()
+                        else:
+                            st.error("아이디 또는 비밀번호가 올바르지 않습니다.")
+                    else:
+                        st.error("아이디와 비밀번호를 입력해주세요.")
+        
+        with tab2:
+            st.markdown("### 📝 회원가입")
+            with st.form("register_form"):
+                new_username = st.text_input("아이디 (영문/숫자)")
+                new_name = st.text_input("이름")
+                new_password = st.text_input("비밀번호", type="password")
+                new_department = st.selectbox("담당 부서", ["DBA", "여신서비스개발부"])
+                registered = st.form_submit_button("회원가입", use_container_width=True)
+                
+                if registered:
+                    if new_username and new_name and new_password and new_department:
+                        try:
+                            user_id = st.session_state.db_manager.create_user(
+                                new_username, new_name, new_password, new_department
+                            )
+                            st.success("회원가입이 완료되었습니다! 로그인해주세요.")
+                        except Exception as e:
+                            if "unique" in str(e).lower():
+                                st.error("이미 존재하는 아이디입니다.")
+                            else:
+                                st.error("회원가입 중 오류가 발생했습니다.")
+                    else:
+                        st.error("모든 필드를 입력해주세요.")
+    
+    st.stop()
+
+# Main header with logo and branding (logged in users)
 col1, col2, col3 = st.columns([1, 2, 1])
+with col1:
+    if st.button("🚪 로그아웃"):
+        st.session_state.current_user = None
+        st.rerun()
 with col2:
     st.markdown('<div class="mascot-header">', unsafe_allow_html=True)
     
@@ -356,13 +435,14 @@ elif page == "📝 업무 지식 등록":
     
     # Navigation buttons outside the form
     if submitted and title and content:
+        st.markdown("---")
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("대화하기", key="goto_chat"):
+            if st.button("💬 대화하기", key="goto_chat"):
                 st.session_state.current_page = "💬 대화하기"
                 st.rerun()
         with col2:
-            if st.button("업무 지식 전체 조회", key="goto_knowledge"):
+            if st.button("🔍 업무 지식 전체 조회", key="goto_knowledge"):
                 st.session_state.current_page = "🔍 업무 지식 조회"
                 st.rerun()
 
@@ -438,7 +518,7 @@ elif page == "🔍 업무 지식 조회":
                 st.markdown(card_html, unsafe_allow_html=True)
                 
                 # Make the card clickable using expander
-                if st.button(f"자세히 보기", key=f"knowledge_{knowledge_id}", use_container_width=True):
+                if st.button("자세히 보기", key=f"knowledge_{knowledge_id}"):
                     # Increment view count when clicked
                     st.session_state.db_manager.increment_view_count(knowledge_id)
                     
