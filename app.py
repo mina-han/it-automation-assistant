@@ -285,11 +285,84 @@ if st.session_state.current_user is None:
     
     st.stop()
 
+# Account settings modal
+if "show_account_settings" in st.session_state and st.session_state.show_account_settings:
+    st.markdown("### ⚙️ 내 계정 정보 변경")
+    
+    user = st.session_state.current_user
+    current_name = user[2] if user and len(user) > 2 else ""
+    current_department = user[3] if user and len(user) > 3 else ""
+    
+    with st.form("account_update_form"):
+        st.markdown(f"**계정 아이디:** {user[1]} (변경 불가)")
+        
+        new_name = st.text_input("이름", value=current_name, placeholder="새로운 이름을 입력하세요")
+        new_password = st.text_input("새 비밀번호", type="password", placeholder="새 비밀번호를 입력하세요 (변경하지 않으려면 비워두세요)")
+        new_department = st.selectbox("부서", ["DBA", "여신서비스개발부"], index=0 if current_department == "DBA" else 1)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.form_submit_button("💾 저장", type="primary"):
+                # Prepare update data
+                update_data = {}
+                if new_name and new_name != current_name:
+                    update_data['name'] = new_name
+                if new_password:
+                    update_data['password'] = new_password
+                if new_department != current_department:
+                    update_data['department'] = new_department
+                
+                if update_data:
+                    success = st.session_state.db_manager.update_user_info(user[0], **update_data)
+                    if success:
+                        st.success("✅ 계정 정보가 성공적으로 업데이트되었습니다!")
+                        # Refresh current user data
+                        updated_user = st.session_state.db_manager.get_user_by_id(user[0])
+                        if updated_user:
+                            st.session_state.current_user = updated_user
+                        st.session_state.show_account_settings = False
+                        st.rerun()
+                    else:
+                        st.error("❌ 계정 정보 업데이트에 실패했습니다.")
+                else:
+                    st.warning("⚠️ 변경할 정보가 없습니다.")
+        
+        with col2:
+            if st.form_submit_button("❌ 취소"):
+                st.session_state.show_account_settings = False
+                st.rerun()
+    
+    st.markdown("---")
+
 # Main header with logo and branding (logged in users)
 col1, col2, col3 = st.columns([1, 2, 1])
 with col1:
-    if st.button("🚪 로그아웃"):
+    # Display user info safely
+    user = st.session_state.current_user
+    if user and len(user) >= 6:
+        try:
+            # user structure: (id, username, name, department, experience_points, level)
+            st.markdown(f"""
+            <div style="background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%); 
+                        padding: 10px; border-radius: 10px; margin-bottom: 10px;
+                        border: 1px solid #90CAF9;">
+                <div style="font-size: 0.9rem; color: #1976D2; font-weight: bold;">👤 {user[2]}</div>
+                <div style="font-size: 0.8rem; color: #666;">🏢 {user[3]}</div>
+                <div style="font-size: 0.8rem; color: #666;">⭐ Lv.{user[5]} ({user[4]}점)</div>
+            </div>
+            """, unsafe_allow_html=True)
+        except (IndexError, TypeError):
+            st.markdown("**👤 로그인된 사용자**")
+    
+    # Account management buttons in the bottom left
+    st.markdown("---")
+    if st.button("⚙️ 내 계정 정보 변경", key="account_settings"):
+        st.session_state.show_account_settings = True
+        st.rerun()
+    
+    if st.button("🚪 로그아웃", key="logout"):
         st.session_state.current_user = None
+        st.session_state.show_account_settings = False
         st.rerun()
 with col2:
     st.markdown('<div class="mascot-header">', unsafe_allow_html=True)

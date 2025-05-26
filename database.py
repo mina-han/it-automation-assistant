@@ -478,3 +478,37 @@ class DatabaseManager:
             return rankings
         except Exception as e:
             return []
+    
+    def update_user_info(self, user_id, name=None, password=None, department=None):
+        """Update user information (excluding username)"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # Build update query dynamically based on provided fields
+            update_fields = []
+            values = []
+            
+            if name:
+                update_fields.append("name = %s")
+                values.append(name)
+            if password:
+                update_fields.append("password = %s")
+                values.append(password)
+            if department:
+                update_fields.append("department = %s")
+                values.append(department)
+            
+            if not update_fields:
+                return False
+            
+            values.append(user_id)
+            query = f"UPDATE users SET {', '.join(update_fields)} WHERE id = %s"
+            
+            cursor.execute(query, values)
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return cursor.rowcount > 0
+        except Exception as e:
+            return False
