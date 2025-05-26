@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>물어보 SHOO</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Pretendard', sans-serif;
+      background-color: #fefdfc;
+      color: #333;
+    }
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+    .sidebar {
+      background: #fff;
+      width: 250px;
+      padding: 30px 20px;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+      border-radius: 12px;
+      margin: auto 0 auto 50px;
+    }
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 16px;
+      font-weight: 500;
+      color: #1e1e1e;
+    }
+    .sidebar-item img {
+      width: 20px;
+      height: 20px;
+    }
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      text-align: center;
+    }
+    .main h1 {
+      font-size: 40px;
+      font-weight: 800;
+      color: #1e1e1e;
+      margin-bottom: 10px;
+    }
+    .main p.subtitle {
+      font-size: 16px;
+      color: #777;
+      margin-bottom: 40px;
+    }
+    .main img.character {
+      width: 280px;
+      margin-bottom: 30px;
+    }
+    .main .chat-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: center;
+    }
+    .main .chat-title img {
+      width: 24px;
+    }
+    .main .chat-desc {
+      font-size: 15px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="sidebar">
+      <div class="sidebar-item">
+        <img src="https://img.icons8.com/ios-filled/50/000000/chat.png" alt="chat"/>
+        대화하기
+      </div>
+      <div class="sidebar-item">
+        <img src="https://img.icons8.com/ios-filled/50/000000/plus-math.png" alt="plus"/>
+        업무 지식 등록
+      </div>
+      <div class="sidebar-item">
+        <img src="https://img.icons8.com/ios-filled/50/000000/search--v1.png" alt="search"/>
+        업무 지식 조회
+      </div>
+      <div class="sidebar-item">
+        <img src="https://img.icons8.com/ios-filled/50/000000/time-machine.png" alt="history"/>
+        내의 대화 이력
+      </div>
+    </div>
+    <div class="main">
+      <h1>물어보 <strong>SHOO</strong></h1>
+      <p class="subtitle">IT 실무자를 위한 업무 지식 도움이</p>
+      <img class="character" src="/mnt/data/09abbd27-240f-4989-a011-2497afdb450e.png" alt="shoo" />
+      <div class="chat-title">
+        <img src="https://img.icons8.com/ios/50/000000/speech-bubble--v1.png" alt="bubble"/>
+        대화하기
+      </div>
+      <p class="chat-desc">자연어로 질문하시면 기존 이슈 해결 방안을 기반으로 답변드립니다.</p>
+    </div>
+  </div>
+</body>
+</html>

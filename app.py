@@ -42,37 +42,36 @@ st.markdown("""
     }
     
     .knowledge-card {
-        background: white;
-        padding: 32px;
-        border-radius: 20px;
-        border: 1px solid #f0f0f0;
-        margin-bottom: 24px;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.04);
+        background: #fff;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.05);
         transition: all 0.3s ease;
         cursor: pointer;
         position: relative;
+        border: none;
     }
     
     .knowledge-card:hover {
-        box-shadow: 0 12px 35px rgba(0,0,0,0.08);
-        transform: translateY(-2px);
-        border-color: #e0e0e0;
+        box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+        transform: translateY(-3px);
     }
     
     .knowledge-title {
-        font-size: 1.4rem;
-        font-weight: 700;
-        color: #1a1a1a;
-        margin-bottom: 16px;
+        font-size: 20px;
+        font-weight: 800;
+        color: #1e1e1e;
+        margin-bottom: 15px;
         display: flex;
         align-items: center;
-        gap: 16px;
+        gap: 12px;
     }
     
     .knowledge-preview {
-        color: #666;
-        font-size: 1rem;
-        line-height: 1.7;
+        color: #555;
+        font-size: 15px;
+        line-height: 1.6;
         margin-bottom: 20px;
         font-weight: 400;
     }
@@ -80,37 +79,36 @@ st.markdown("""
     .knowledge-tags {
         display: flex;
         flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 20px;
+        gap: 8px;
+        margin-top: 15px;
     }
     
     .knowledge-tag {
-        background: #f8f9fa;
-        color: #495057;
-        padding: 8px 16px;
-        border-radius: 25px;
-        font-size: 0.9rem;
+        background: #fefdfc;
+        color: #333;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 14px;
         font-weight: 500;
-        border: 1px solid #e9ecef;
+        border: 1px solid #e0e0e0;
     }
     
     .knowledge-meta {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-top: 20px;
-        font-size: 0.9rem;
-        color: #868e96;
+        margin-top: 15px;
+        font-size: 14px;
+        color: #777;
     }
     
     .type-badge {
-        padding: 8px 16px;
-        border-radius: 25px;
-        font-size: 0.9rem;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 14px;
         font-weight: 600;
         color: white;
-        margin-right: 16px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-right: 12px;
     }
     .issue-title {
         font-size: 1.3rem;
