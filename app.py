@@ -338,26 +338,8 @@ if "show_account_settings" in st.session_state and st.session_state.show_account
 col1, col2, col3 = st.columns([1, 2, 1])
 with col1:
     # Display user info safely
-    user = st.session_state.current_user
-    if user:
-        try:
-            # user structure: (id, username, name, department, experience_points, level)
-            name = user[2] if len(user) > 2 else "사용자"
-            department = user[3] if len(user) > 3 else "부서 없음"
-            experience = user[4] if len(user) > 4 else 0
-            level = user[5] if len(user) > 5 else 1
-            
-            st.markdown(f"""
-            <div style="background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%); 
-                        padding: 10px; border-radius: 10px; margin-bottom: 10px;
-                        border: 1px solid #90CAF9;">
-                <div style="font-size: 0.9rem; color: #1976D2; font-weight: bold;">👤 {name}</div>
-                <div style="font-size: 0.8rem; color: #666;">🏢 {department}</div>
-                <div style="font-size: 0.8rem; color: #666;">⭐ Lv.{level} ({experience}점)</div>
-            </div>
-            """, unsafe_allow_html=True)
-        except (IndexError, TypeError, KeyError):
-            st.markdown("**👤 로그인된 사용자**")
+    if hasattr(st.session_state, 'current_user') and st.session_state.current_user:
+        st.markdown("**👤 로그인된 사용자**")
     
     # Account management buttons in the bottom left
     st.markdown("---")
@@ -697,6 +679,174 @@ elif page == "📋 나의 대화 이력":
         if st.button("💬 대화하러 가기", key="goto_chat_from_history"):
             st.session_state.page = "💬 대화하기"
             st.rerun()
+
+elif page == "❓ QnA 게시판":
+    st.header("❓ QnA 게시판")
+    st.markdown("업무 관련 질문을 등록하고 전문가들의 답변을 받아보세요!")
+    
+    # Tabs for different actions
+    tab1, tab2 = st.tabs(["📋 질문 목록", "❓ 새 질문 등록"])
+    
+    with tab1:
+        # Filter options
+        col1, col2 = st.columns(2)
+        with col1:
+            category_filter = st.selectbox("카테고리", ["전체", "데이터베이스", "네트워크", "보안", "애플리케이션", "시스템"])
+        with col2:
+            type_filter = st.selectbox("질문 유형", ["전체", "issue", "manual"])
+        
+        # Get filtered questions
+        category = None if category_filter == "전체" else category_filter
+        question_type = None if type_filter == "전체" else type_filter
+        questions = st.session_state.db_manager.get_qna_questions(category, question_type)
+        
+        if questions:
+            for question in questions:
+                q_id, title, content, category, q_type, status, created_at, questioner_name, answer_count = question
+                
+                # Question card
+                with st.container():
+                    st.markdown(f"""
+                    <div style="background: white; padding: 15px; border-radius: 10px; margin: 10px 0; 
+                                border-left: 4px solid #2196F3; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h4 style="color: #1976D2; margin: 0 0 10px 0;">{title}</h4>
+                        <p style="color: #666; margin: 5px 0;"><strong>카테고리:</strong> {category} | <strong>유형:</strong> {q_type}</p>
+                        <p style="color: #666; margin: 5px 0;"><strong>질문자:</strong> {questioner_name} | <strong>답변 수:</strong> {answer_count}</p>
+                        <p style="color: #888; font-size: 0.9em; margin: 5px 0;">{created_at.strftime('%Y-%m-%d %H:%M')}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    if st.button(f"답변 보기/작성", key=f"view_q_{q_id}"):
+                        st.session_state.selected_question_id = q_id
+                        st.rerun()
+        else:
+            st.info("등록된 질문이 없습니다.")
+    
+    with tab2:
+        with st.form("new_question_form"):
+            st.markdown("### 새로운 질문 등록")
+            question_title = st.text_input("제목", placeholder="질문의 제목을 입력하세요")
+            question_content = st.text_area("질문 내용", height=150, placeholder="상세한 질문 내용을 입력하세요")
+            question_category = st.selectbox("카테고리", ["데이터베이스", "네트워크", "보안", "애플리케이션", "시스템"])
+            question_type = st.selectbox("질문 유형", ["issue", "manual"])
+            
+            if st.form_submit_button("질문 등록", type="primary"):
+                if question_title and question_content:
+                    user = st.session_state.current_user
+                    user_id = user[0] if user else None
+                    
+                    if user_id:
+                        question_id = st.session_state.db_manager.add_qna_question(
+                            question_title, question_content, question_category, question_type, user_id
+                        )
+                        if question_id:
+                            st.success("✅ 질문이 성공적으로 등록되었습니다! (+2 경험치)")
+                            st.rerun()
+                        else:
+                            st.error("질문 등록에 실패했습니다.")
+                    else:
+                        st.error("로그인이 필요합니다.")
+                else:
+                    st.warning("제목과 내용을 모두 입력해주세요.")
+
+elif page == "👤 나의 정보":
+    st.header("👤 나의 정보")
+    
+    user = st.session_state.current_user
+    if user:
+        name = user[2] if len(user) > 2 else "사용자"
+        department = user[3] if len(user) > 3 else "부서 없음"
+        experience = user[4] if len(user) > 4 else 0
+        level = user[5] if len(user) > 5 else 1
+        
+        # User info card
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    padding: 20px; border-radius: 15px; margin: 20px 0; color: white;">
+            <h2 style="margin: 0 0 15px 0;">🎯 {name}님의 프로필</h2>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div><strong>🏢 부서:</strong> {department}</div>
+                <div><strong>⭐ 레벨:</strong> {level}</div>
+                <div><strong>🎮 경험치:</strong> {experience}점</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Progress bar for next level
+        next_level_exp = level * 100  # Simple leveling system
+        current_level_exp = experience % next_level_exp if next_level_exp > 0 else experience
+        progress = min(current_level_exp / next_level_exp if next_level_exp > 0 else 1, 1)
+        
+        st.markdown("### 📊 레벨 진행도")
+        st.progress(progress)
+        st.markdown(f"다음 레벨까지: {next_level_exp - current_level_exp}점 필요")
+        
+        # Tabs for different info
+        tab1, tab2, tab3 = st.tabs(["📝 등록한 업무 지식", "❓ QnA 활동", "📈 활동 통계"])
+        
+        with tab1:
+            # Show user's knowledge contributions
+            user_knowledge = st.session_state.db_manager.get_all_knowledge()
+            user_contributions = [k for k in user_knowledge if len(k) > 6 and k[6] == user[0]]
+            
+            if user_contributions:
+                st.markdown(f"**총 {len(user_contributions)}개의 업무 지식을 등록했습니다.**")
+                for knowledge in user_contributions:
+                    st.markdown(f"- **{knowledge[1]}** ({knowledge[5]} | 조회수: {knowledge[6]})")
+            else:
+                st.info("아직 등록한 업무 지식이 없습니다.")
+        
+        with tab2:
+            st.markdown("QnA 게시판 활동 내역을 확인할 수 있습니다.")
+            # This would show user's questions and answers
+            st.info("QnA 활동 내역 기능은 추후 업데이트 예정입니다.")
+        
+        with tab3:
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("등록한 지식", len(user_contributions))
+            with col2:
+                st.metric("현재 레벨", level)
+            with col3:
+                st.metric("총 경험치", experience)
+
+elif page == "🏆 대시보드":
+    st.header("🏆 사용자 랭킹 대시보드")
+    st.markdown("전체 사용자들의 활동 순위를 확인해보세요!")
+    
+    # Get user rankings
+    rankings = st.session_state.db_manager.get_user_rankings(limit=20)
+    
+    if rankings:
+        st.markdown("### 🥇 경험치 랭킹")
+        
+        for i, (username, name, department, experience, level) in enumerate(rankings, 1):
+            # Medal emoji for top 3
+            medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}위"
+            
+            # Color coding for top ranks
+            if i <= 3:
+                bg_color = "#FFD700" if i == 1 else "#C0C0C0" if i == 2 else "#CD7F32"
+                text_color = "#000"
+            else:
+                bg_color = "#f8f9fa"
+                text_color = "#333"
+            
+            st.markdown(f"""
+            <div style="background: {bg_color}; padding: 15px; border-radius: 10px; margin: 5px 0; 
+                        color: {text_color}; border: 1px solid #ddd;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>{medal} {name}</strong> ({department})
+                    </div>
+                    <div>
+                        <strong>Lv.{level}</strong> | {experience}점
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.info("아직 랭킹 정보가 없습니다.")
 
 # Footer
 st.markdown("---")
