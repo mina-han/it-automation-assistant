@@ -42,37 +42,36 @@ st.markdown("""
     }
     
     .knowledge-card {
-        background: #fff;
-        padding: 30px;
-        border-radius: 12px;
-        margin-bottom: 20px;
-        box-shadow: 2px 0 10px rgba(0,0,0,0.05);
-        transition: all 0.3s ease;
+        background: white;
+        padding: 24px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+        border: 1px solid #e5e7eb;
+        transition: all 0.2s ease;
         cursor: pointer;
-        position: relative;
-        border: none;
+        box-shadow: 2px 0 6px rgba(0,0,0,0.04);
     }
     
     .knowledge-card:hover {
-        box-shadow: 4px 0 15px rgba(0,0,0,0.1);
-        transform: translateY(-3px);
+        background: #f3f4f6;
+        border-color: #d1d5db;
     }
     
     .knowledge-title {
-        font-size: 20px;
-        font-weight: 800;
-        color: #1e1e1e;
-        margin-bottom: 15px;
+        font-size: 18px;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 12px;
         display: flex;
         align-items: center;
         gap: 12px;
     }
     
     .knowledge-preview {
-        color: #555;
+        color: #444;
         font-size: 15px;
         line-height: 1.6;
-        margin-bottom: 20px;
+        margin-bottom: 16px;
         font-weight: 400;
     }
     
@@ -80,26 +79,26 @@ st.markdown("""
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
-        margin-top: 15px;
+        margin-top: 12px;
     }
     
     .knowledge-tag {
-        background: #fefdfc;
-        color: #333;
+        background: #f3f4f6;
+        color: #1f2937;
         padding: 6px 12px;
         border-radius: 8px;
         font-size: 14px;
         font-weight: 500;
-        border: 1px solid #e0e0e0;
+        border: 1px solid #e5e7eb;
     }
     
     .knowledge-meta {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-top: 15px;
+        margin-top: 12px;
         font-size: 14px;
-        color: #777;
+        color: #6b7280;
     }
     
     .type-badge {
