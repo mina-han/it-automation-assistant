@@ -757,39 +757,56 @@ elif page == "🔍 업무 지식 조회":
             type_color = "#4CAF50" if knowledge_type == "메뉴얼" else "#2196F3"
             
             card_html = f'''
-            <div class="knowledge-card" style="cursor: pointer;">
-                <div class="knowledge-title">
-                    <span class="type-badge" style="background-color: {type_color};">{knowledge_type}</span>
+            <style>
+                .knowledge-card-{knowledge_id} {{
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    border: 2px solid #e0e0e0;
+                    padding: 16px;
+                    margin: 8px 0;
+                    border-radius: 12px;
+                    background: white;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                }}
+                .knowledge-card-{knowledge_id}:hover {{
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    border-color: #87CEEB;
+                }}
+            </style>
+            <div class="knowledge-card-{knowledge_id}">
+                <div class="knowledge-title" style="font-weight: bold; margin-bottom: 8px; font-size: 16px;">
+                    <span class="type-badge" style="background-color: {type_color}; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; margin-right: 8px;">{knowledge_type}</span>
                     📄 {title}
                 </div>
-                <div class="knowledge-preview">{preview}</div>
+                <div class="knowledge-preview" style="color: #666; margin-bottom: 12px; line-height: 1.4;">{preview}</div>
             '''
             
             # Add keywords as tags
             if keywords_str:
                 keywords = keywords_str.split(',')
-                tags_html = '<div class="knowledge-tags">'
+                tags_html = '<div class="knowledge-tags" style="margin-bottom: 12px;">'
                 for kw in keywords:
-                    tags_html += f'<span class="knowledge-tag">#{kw.strip()}</span>'
+                    tags_html += f'<span class="knowledge-tag" style="background-color: #f0f0f0; color: #333; padding: 2px 6px; border-radius: 8px; font-size: 11px; margin-right: 4px; display: inline-block;">#{kw.strip()}</span>'
                 tags_html += '</div>'
                 card_html += tags_html
             
             # Add metadata
             card_html += f'''
-                <div class="knowledge-meta">
+                <div class="knowledge-meta" style="color: #888; font-size: 12px; display: flex; justify-content: space-between; border-top: 1px solid #f0f0f0; padding-top: 8px;">
                     <span>등록일: {created_at.strftime("%Y-%m-%d") if created_at else "정보 없음"}</span>
                     <span>조회수: {view_count}</span>
                 </div>
             </div>
             '''
             
-            # Create a single container for the card
+            # Create a clickable container for the card
             with st.container():
                 # Display the card HTML first
                 st.markdown(card_html, unsafe_allow_html=True)
                 
-                # Hidden button for card click functionality
-                if st.button("📄 상세보기", key=f"card_btn_{knowledge_id}"):
+                # Card click functionality (invisible button covering the card area)
+                if st.button("", key=f"card_btn_{knowledge_id}", help="클릭하여 상세보기"):
                     # Increment view count when clicked
                     st.session_state.db_manager.increment_view_count(knowledge_id)
                     
