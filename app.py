@@ -746,12 +746,27 @@ elif page == "❓ QnA 게시판":
         question_type = None if type_filter == "전체" else type_filter
         questions = st.session_state.db_manager.get_qna_questions(category, question_type)
         
-        # 디버깅 정보 표시
-        st.info(f"조회된 질문 수: {len(questions) if questions else 0}개")
+        # 디버깅 정보 표시 및 오류 체크
+        if questions is None:
+            st.error("❌ 질문 목록을 불러오는 중 오류가 발생했습니다.")
+            questions = []
+        
+        st.info(f"📊 조회된 질문 수: {len(questions)}개")
+        
+        # 모든 질문 보기 (디버깅용)
+        if st.checkbox("🔍 모든 질문 표시 (필터 무시)", key="show_all_questions"):
+            all_questions = st.session_state.db_manager.get_qna_questions()
+            st.write(f"전체 질문 수: {len(all_questions) if all_questions else 0}개")
+            questions = all_questions
         
         if questions:
             for question in questions:
-                q_id, title, content, category, q_type, status, created_at, questioner_name, answer_count = question
+                try:
+                    q_id, title, content, category, q_type, status, created_at, questioner_name, answer_count = question
+                except ValueError as e:
+                    st.error(f"질문 데이터 파싱 오류: {e}")
+                    st.write(f"데이터: {question}")
+                    continue
                 
                 # Question card
                 with st.container():
@@ -824,17 +839,22 @@ elif page == "❓ QnA 게시판":
 elif page == "👤 나의 정보":
     st.header("👤 나의 정보")
     
-    user = st.session_state.current_user
-    if user and isinstance(user, (list, tuple)):
+    user = st.session_state.get('current_user', None)
+    
+    # 안전한 사용자 정보 접근
+    name = "사용자"
+    department = "부서 없음" 
+    experience = 0
+    level = 1
+    
+    if user and isinstance(user, (list, tuple)) and len(user) >= 6:
         try:
-            name = user[2] if len(user) > 2 else "사용자"
-            department = user[3] if len(user) > 3 else "부서 없음"
-            experience = user[4] if len(user) > 4 else 0
-            level = user[5] if len(user) > 5 else 1
-        except (IndexError, KeyError, TypeError):
-            name, department, experience, level = "사용자", "부서 없음", 0, 1
-    else:
-        name, department, experience, level = "사용자", "부서 없음", 0, 1
+            name = str(user[2]) if user[2] else "사용자"
+            department = str(user[3]) if user[3] else "부서 없음"
+            experience = int(user[4]) if user[4] else 0
+            level = int(user[5]) if user[5] else 1
+        except (IndexError, TypeError, ValueError):
+            pass
     
     # User info card
     st.markdown(f"""

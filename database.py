@@ -586,8 +586,11 @@ class DatabaseManager:
             questions = cursor.fetchall()
             cursor.close()
             conn.close()
+            logger.info(f"Retrieved {len(questions)} QnA questions")
             return questions
         except Exception as e:
+            logger.error(f"Failed to get QnA questions: {e}")
+            print(f"QnA 질문 조회 오류: {e}")  # 디버깅용
             return []
     
     def get_qna_answers(self, question_id):
