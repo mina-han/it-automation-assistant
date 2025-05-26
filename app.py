@@ -190,22 +190,6 @@ if page == "💬 대화하기":
     
     # Chat interface
     
-    # Chat history management buttons
-    col1, col2, col3 = st.columns([2, 1, 1])
-    with col2:
-        if st.button("🗑️ 대화 기록 삭제"):
-            st.session_state.chat_history = []
-            st.session_state.conversation_context = []
-            st.rerun()
-    with col3:
-        if st.button("💾 대화 기록 저장"):
-            if st.session_state.chat_history:
-                # Save conversation to database
-                conversation_summary = f"대화 {len(st.session_state.chat_history)}개 메시지"
-                for user_msg, bot_msg in st.session_state.chat_history:
-                    st.session_state.db_manager.save_chat_history(user_msg, bot_msg)
-                st.success("대화 기록이 저장되었습니다!")
-    
     # Display chat history
     if st.session_state.chat_history:
         st.markdown("### 💬 대화 내역")
