@@ -514,14 +514,30 @@ if page == "💬 대화하기":
                         col1, col2 = st.columns([1, 1])
                         with col1:
                             if st.button("✅ 예", key=f"knowledge_yes_{len(st.session_state.chat_history)}"):
-                                # 업무 지식 등록 페이지로 이동
-                                st.session_state.current_page = "📝 업무 지식 등록"
-                                st.session_state.suggested_title = user_input[:50] + ('...' if len(user_input) > 50 else '')
-                                st.session_state.suggested_content = response
-                                st.rerun()
+                                # QnA 게시판에 질문으로 자동 등록
+                                user = st.session_state.get('current_user', None)
+                                if user and isinstance(user, (list, tuple)) and len(user) > 0:
+                                    user_id = user[0]
+                                    question_title = f"{user_input[:50]}{'...' if len(user_input) > 50 else ''}"
+                                    
+                                    # 응답에서 매뉴얼/이슈 구분
+                                    question_type = "manual" if "매뉴얼" in response else "issue"
+                                    
+                                    question_id = st.session_state.db_manager.add_qna_question(
+                                        question_title, user_input, "기타", question_type, user_id
+                                    )
+                                    if question_id:
+                                        st.success("✅ QnA 게시판에 질문이 등록되었습니다! (+2 경험치)")
+                                        st.info("🎯 QnA 게시판에서 등록된 질문을 확인하세요!")
+                                        st.session_state.current_page = "❓ QnA 게시판"
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ 질문 등록 중 오류가 발생했습니다.")
+                                else:
+                                    st.error("❌ 로그인이 필요합니다.")
                         with col2:
                             if st.button("❌ 아니오", key=f"knowledge_no_{len(st.session_state.chat_history)}"):
-                                st.info("💭 나중에 필요하시면 언제든 업무 지식 등록 페이지를 이용해주세요!")
+                                st.info("💭 나중에 필요하시면 언제든 QnA 게시판이나 업무 지식 등록을 이용해주세요!")
                     
                     st.session_state.chat_history.append((user_input, response))
                     st.rerun()
