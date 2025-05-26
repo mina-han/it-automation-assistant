@@ -548,21 +548,39 @@ elif page == "📝 업무 지식 등록":
         
         content = st.text_area("내용", height=200, placeholder="상세한 내용을 입력해주세요...")
         
+        # 파일 첨부 기능 추가
+        st.markdown("#### 📎 파일 첨부 (선택사항)")
+        uploaded_file = st.file_uploader(
+            "파일을 첨부하면 텍스트를 자동으로 추출하여 내용에 추가됩니다",
+            type=['txt', 'pdf', 'xlsx', 'xls', 'docx', 'doc', 'jpg', 'jpeg', 'png'],
+            help="지원 파일: 텍스트(.txt), PDF(.pdf), Excel(.xlsx, .xls), Word(.docx, .doc), 이미지(.jpg, .png)"
+        )
+        
         submitted = st.form_submit_button("등록", type="primary")
         
         if submitted and title and content:
             with st.spinner("업무 지식을 등록하고 있습니다..."):
+                # 파일에서 텍스트 추출하여 내용에 추가
+                final_content = content
+                if uploaded_file is not None:
+                    extracted_text, success = extract_text_from_file(uploaded_file)
+                    if success:
+                        final_content += f"\n\n--- 첨부 파일에서 추출된 내용 ---\n{extracted_text}"
+                        st.info(f"📎 파일 '{uploaded_file.name}'에서 텍스트가 추출되어 내용에 추가되었습니다.")
+                    else:
+                        st.warning(f"⚠️ 파일 처리 중 문제가 발생했습니다: {extracted_text}")
+                
                 # Extract keywords and create summary
-                keywords = extract_keywords(content)
-                summary = summarize_text(content)
+                keywords = extract_keywords(final_content)
+                summary = summarize_text(final_content)
                 
                 # Save to database with user ID for points
                 user = st.session_state.current_user
                 user_id = user[0] if user and isinstance(user, (list, tuple)) and len(user) > 0 else None
-                knowledge_id = st.session_state.db_manager.add_knowledge(title, content, keywords, knowledge_type, user_id)
+                knowledge_id = st.session_state.db_manager.add_knowledge(title, final_content, keywords, knowledge_type, user_id)
                 
                 # Update RAG embeddings
-                st.session_state.rag_engine.add_document(knowledge_id, title, content)
+                st.session_state.rag_engine.add_document(knowledge_id, title, final_content)
                 
                 # Display success card
                 st.success("✅ 업무 지식이 성공적으로 등록되었습니다!")
@@ -948,14 +966,33 @@ elif page == "❓ QnA 게시판":
             question_type = st.selectbox("질문 유형", ["issue", "manual"], 
                 index=0 if pre_filled_type == "issue" else 1)
             
+            # 파일 첨부 기능 추가
+            st.markdown("#### 📎 파일 첨부 (선택사항)")
+            uploaded_file = st.file_uploader(
+                "파일을 첨부하면 텍스트를 자동으로 추출하여 질문 내용에 추가됩니다",
+                type=['txt', 'pdf', 'xlsx', 'xls', 'docx', 'doc', 'jpg', 'jpeg', 'png'],
+                help="지원 파일: 텍스트(.txt), PDF(.pdf), Excel(.xlsx, .xls), Word(.docx, .doc), 이미지(.jpg, .png)",
+                key="qna_file_upload"
+            )
+            
             if st.form_submit_button("질문 등록", type="primary"):
                 if question_title and question_content:
+                    # 파일에서 텍스트 추출하여 질문 내용에 추가
+                    final_content = question_content
+                    if uploaded_file is not None:
+                        extracted_text, success = extract_text_from_file(uploaded_file)
+                        if success:
+                            final_content += f"\n\n--- 첨부 파일에서 추출된 내용 ---\n{extracted_text}"
+                            st.info(f"📎 파일 '{uploaded_file.name}'에서 텍스트가 추출되어 질문 내용에 추가되었습니다.")
+                        else:
+                            st.warning(f"⚠️ 파일 처리 중 문제가 발생했습니다: {extracted_text}")
+                    
                     user = st.session_state.current_user
                     user_id = user[0] if user and isinstance(user, (list, tuple)) and len(user) > 0 else None
                     
                     if user_id:
                         question_id = st.session_state.db_manager.add_qna_question(
-                            question_title, question_content, question_category, question_type, user_id
+                            question_title, final_content, question_category, question_type, user_id
                         )
                         if question_id:
                             st.success("✅ 질문이 성공적으로 등록되었습니다! (+2 경험치)")
