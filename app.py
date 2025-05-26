@@ -818,24 +818,26 @@ elif page == "❓ QnA 게시판":
                     st.write(f"데이터: {question}")
                     continue
                 
-                # 클릭 가능한 질문 카드 (hover 효과 포함)
-                card_clicked = st.button(
-                    f"""
-                    {title}
+                # 클릭 가능한 질문 카드 (통일된 디자인)
+                with st.container():
+                    card_html = f"""
+                    <div class="issue-card" style="margin: 15px 0; cursor: pointer; transition: all 0.2s ease;">
+                        <div class="issue-title" style="margin-bottom: 12px;">{title}</div>
+                        <div class="knowledge-preview" style="margin-bottom: 16px; color: #666; font-size: 14px;">
+                            📂 {category} | 📝 {q_type} | 👤 {questioner_name} | 💬 답변 {answer_count}개
+                        </div>
+                        <div class="knowledge-meta" style="color: #888; font-size: 13px;">
+                            🕒 {created_at.strftime('%Y-%m-%d %H:%M')}
+                        </div>
+                    </div>
+                    """
+                    st.markdown(card_html, unsafe_allow_html=True)
                     
-                    카테고리: {category} | 유형: {q_type}
-                    질문자: {questioner_name} | 답변 수: {answer_count}
-                    {created_at.strftime('%Y-%m-%d %H:%M')}
-                    """,
-                    key=f"card_{q_id}",
-                    use_container_width=True,
-                    help="클릭하면 질문 상세 내용과 답변을 확인할 수 있습니다"
-                )
-                
-                if card_clicked:
-                    st.session_state.selected_question_id = q_id
-                    st.session_state.current_page = "QnA 질문 상세"
-                    st.rerun()
+                    if st.button("📋 질문 상세보기", key=f"card_{q_id}", use_container_width=True):
+                        st.session_state.selected_question_id = q_id
+                        st.session_state.current_page = "QnA 질문 상세"
+                        st.rerun()
+
                 
                 # 수정/삭제 버튼 (질문 작성자만) - 작은 버튼으로 표시
                 current_user = st.session_state.get('current_user', None)
@@ -1144,20 +1146,76 @@ elif st.session_state.current_page == "QnA 질문 상세":
             # 질문 제목과 내용을 명확하게 표시
             st.markdown("### 📋 질문 상세")
             
-            # 질문 제목
-            st.markdown(f"""
-            <div style="background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); 
-                        padding: 20px; border-radius: 10px; margin: 15px 0; color: white;">
-                <h2 style="color: white; margin: 0; font-size: 1.5em; font-weight: bold;">{title}</h2>
-            </div>
-            """, unsafe_allow_html=True)
+            # 질문 제목과 수정/삭제 버튼
+            col1, col2 = st.columns([6, 1])
+            with col1:
+                st.markdown(f"""
+                <div class="issue-card" style="margin: 15px 0;">
+                    <div class="issue-title" style="font-size: 20px; font-weight: 700; color: #1f2937; margin-bottom: 15px;">
+                        {title}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # 현재 사용자가 질문 작성자인지 확인
+            current_user = st.session_state.get('current_user', None)
+            is_question_author = current_user and len(current_user) > 0 and current_user[0] == questioner_id
+            
+            with col2:
+                if is_question_author:
+                    if st.button("⚙️ 관리", key="question_manage"):
+                        st.session_state['show_question_edit'] = not st.session_state.get('show_question_edit', False)
+                        st.rerun()
+            
+            # 질문 수정/삭제 옵션
+            if is_question_author and st.session_state.get('show_question_edit', False):
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("✏️ 질문 수정", key="edit_question"):
+                        st.session_state['editing_question'] = True
+                        st.session_state['show_question_edit'] = False
+                        st.rerun()
+                with col2:
+                    if st.button("🗑️ 질문 삭제", key="delete_question"):
+                        if st.session_state.db_manager.delete_qna_question(question_id, current_user[0]):
+                            st.success("질문이 삭제되었습니다.")
+                            st.session_state.qna_selected_question = None
+                            st.rerun()
+                        else:
+                            st.error("질문 삭제에 실패했습니다.")
+            
+            # 질문 수정 폼
+            if is_question_author and st.session_state.get('editing_question', False):
+                st.markdown("### ✏️ 질문 수정")
+                with st.form("edit_question_form"):
+                    edited_title = st.text_input("제목", value=title)
+                    edited_content = st.text_area("내용", value=content, height=150)
+                    edited_category = st.selectbox("카테고리", 
+                        ["데이터베이스", "네트워크", "보안", "애플리케이션", "시스템"],
+                        index=["데이터베이스", "네트워크", "보안", "애플리케이션", "시스템"].index(category))
+                    edited_type = st.selectbox("질문 유형", ["issue", "manual"],
+                        index=0 if q_type == "issue" else 1)
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.form_submit_button("💾 저장"):
+                            if st.session_state.db_manager.update_qna_question(
+                                question_id, edited_title, edited_content, edited_category, edited_type, current_user[0]):
+                                st.success("질문이 수정되었습니다.")
+                                st.session_state['editing_question'] = False
+                                st.rerun()
+                            else:
+                                st.error("질문 수정에 실패했습니다.")
+                    with col2:
+                        if st.form_submit_button("❌ 취소"):
+                            st.session_state['editing_question'] = False
+                            st.rerun()
             
             # 질문 내용
             st.markdown("#### 📝 질문 내용")
             st.markdown(f"""
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 15px 0;
-                        border: 1px solid #e9ecef; line-height: 1.8;">
-                <p style="color: #333; margin: 0; font-size: 1.1em; white-space: pre-wrap;">{content}</p>
+            <div class="issue-card" style="margin: 15px 0;">
+                <div class="knowledge-preview" style="color: #333; margin: 0; line-height: 1.6; white-space: pre-wrap;">{content}</div>
             </div>
             """, unsafe_allow_html=True)
             
@@ -1176,22 +1234,66 @@ elif st.session_state.current_page == "QnA 질문 상세":
             # 답변 목록 가져오기 및 표시
             answers = st.session_state.db_manager.get_qna_answers(question_id)
             
-            st.markdown("### 💬 답변 목록")
+            # 답변 목록과 새로고침 버튼
+            col1, col2 = st.columns([4, 1])
+            with col1:
+                st.markdown("### 💬 답변 목록")
+            with col2:
+                if st.button("🔄 새로고침", key="refresh_answers"):
+                    st.rerun()
+            
             if answers:
-                for answer in answers:
-                    answer_id, answer_content, answer_created_at, is_accepted, answerer_name, answerer_department = answer
+                for i, answer in enumerate(answers):
+                    answer_id, answer_content, answer_created_at, is_accepted, answerer_name, answerer_department, answerer_id = answer
+                    
+                    # 현재 사용자가 답변 작성자인지 확인
+                    current_user = st.session_state.get('current_user', None)
+                    is_answer_author = current_user and len(current_user) > 0 and current_user[0] == answerer_id
                     
                     # 답변 카드
-                    st.markdown(f"""
-                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0; 
-                                border-left: 3px solid #28a745;">
-                        <p style="color: #333; margin: 0 0 10px 0; line-height: 1.6;">{answer_content}</p>
-                        <div style="color: #666; font-size: 0.9em;">
-                            <span><strong>답변자:</strong> {answerer_name} ({answerer_department})</span> | 
-                            <span>{answer_created_at.strftime('%Y-%m-%d %H:%M')}</span>
+                    with st.container():
+                        st.markdown(f"""
+                        <div class="issue-card" style="margin: 15px 0;">
+                            <div style="color: #333; margin: 0 0 15px 0; line-height: 1.6; 
+                                        font-size: 15px; white-space: pre-wrap;">{answer_content}</div>
+                            <div style="color: #666; font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
+                                <span><strong>답변자:</strong> {answerer_name} ({answerer_department}) | {answer_created_at.strftime('%Y-%m-%d %H:%M')}</span>
+                            </div>
                         </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                        """, unsafe_allow_html=True)
+                        
+                        # 수정/삭제 버튼 (본인 답변만)
+                        if is_answer_author:
+                            col1, col2, col3 = st.columns([1, 1, 8])
+                            with col1:
+                                if st.button("✏️ 수정", key=f"edit_answer_{answer_id}"):
+                                    st.session_state[f'editing_answer_{answer_id}'] = True
+                                    st.rerun()
+                            with col2:
+                                if st.button("🗑️ 삭제", key=f"delete_answer_{answer_id}"):
+                                    if st.session_state.db_manager.delete_qna_answer(answer_id, current_user[0]):
+                                        st.success("답변이 삭제되었습니다.")
+                                        st.rerun()
+                                    else:
+                                        st.error("답변 삭제에 실패했습니다.")
+                        
+                        # 답변 수정 폼
+                        if st.session_state.get(f'editing_answer_{answer_id}', False):
+                            with st.form(f"edit_answer_form_{answer_id}"):
+                                edited_content = st.text_area("답변 수정", value=answer_content, height=100)
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    if st.form_submit_button("💾 저장"):
+                                        if st.session_state.db_manager.update_qna_answer(answer_id, edited_content, current_user[0]):
+                                            st.success("답변이 수정되었습니다.")
+                                            del st.session_state[f'editing_answer_{answer_id}']
+                                            st.rerun()
+                                        else:
+                                            st.error("답변 수정에 실패했습니다.")
+                                with col2:
+                                    if st.form_submit_button("❌ 취소"):
+                                        del st.session_state[f'editing_answer_{answer_id}']
+                                        st.rerun()
             else:
                 st.info("아직 답변이 없습니다. 첫 번째 답변을 작성해보세요!")
             

@@ -615,7 +615,7 @@ class DatabaseManager:
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT a.id, a.content, a.created_at, a.is_accepted,
-                       u.name as answerer_name, u.department
+                       u.name as answerer_name, u.department, a.author_id
                 FROM qna_answers a
                 LEFT JOIN users u ON a.author_id = u.id
                 WHERE a.question_id = %s
