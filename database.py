@@ -556,7 +556,7 @@ class DatabaseManager:
             return False
     
     # QnA Board functions
-    def add_qna_question_from_chat(self, question_text, questioner_id=None, use_test_id=False):
+    def add_qna_question_from_chat(self, question_text, questioner_id):
         """Add QnA question from chat suggestion with specified values"""
         try:
             conn = self.get_connection()
@@ -566,25 +566,21 @@ class DatabaseManager:
             # Create title from first 20 characters of question
             title = question_text[:20] + ('...' if len(question_text) > 20 else '')
             
-            # Use test ID if specified, otherwise use provided questioner_id
-            final_questioner_id = 5 if use_test_id else questioner_id
-            
             cursor.execute("""
                 INSERT INTO qna_board (title, question, category, question_type, questioner_id, status, created_at)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
-            """, (title, question_text, "데이터베이스", "issue", final_questioner_id, "대기중", kst_now))
+            """, (title, question_text, "데이터베이스", "issue", questioner_id, "대기중", kst_now))
             
             question_id = cursor.fetchone()[0]
             
-            # Award 2 points for asking a question (only if not using test ID)
-            if not use_test_id and final_questioner_id:
-                self.update_user_experience(final_questioner_id, 2)
+            # Award 2 points for asking a question
+            self.update_user_experience(questioner_id, 2)
             
             conn.commit()
             cursor.close()
             conn.close()
-            logger.info(f"QnA question from chat added successfully with ID: {question_id} (questioner_id: {final_questioner_id})")
+            logger.info(f"QnA question from chat added successfully with ID: {question_id}")
             return question_id
         except Exception as e:
             logger.error(f"Failed to add QnA question from chat: {e}")
