@@ -227,6 +227,12 @@ if page == "💬 대화하기":
                     if len(st.session_state.conversation_context) > 5:
                         st.session_state.conversation_context = st.session_state.conversation_context[-5:]
                     
+                    # 자동으로 데이터베이스에 저장
+                    try:
+                        st.session_state.db_manager.save_chat_history(user_input, response)
+                    except Exception as e:
+                        st.error(f"대화 저장 중 오류가 발생했습니다: {e}")
+                    
                     st.session_state.chat_history.append((user_input, response))
                     st.rerun()
     
@@ -346,12 +352,18 @@ elif page == "📋 나의 대화 이력":
     st.header("📋 나의 대화 이력")
     
     # Control buttons
-    col1, col2, col3 = st.columns([1, 1, 2])
+    col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
     with col1:
         if st.button("🔄 새로고침", key="refresh_history"):
             st.rerun()
     with col2:
-        if st.button("🗑️ 전체 삭제", key="clear_all_history"):
+        if st.button("🗑️ 현재 세션 삭제", key="clear_session_history"):
+            st.session_state.chat_history = []
+            st.session_state.conversation_context = []
+            st.success("현재 세션의 대화 기록이 삭제되었습니다.")
+            st.rerun()
+    with col3:
+        if st.button("🗑️ 전체 DB 삭제", key="clear_all_history"):
             st.session_state.db_manager.clear_all_chat_history()
             st.success("모든 대화 이력이 삭제되었습니다.")
             st.rerun()
