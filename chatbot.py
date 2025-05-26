@@ -143,7 +143,7 @@ class ChatBot:
                 reason = registration_analysis.get("reason", "")
                 
                 bot_response += f"\n\n💡 **새로운 업무 지식 등록 제안**\n"
-                bot_response += f"{reason} 이 내용을 {'이슈' if suggestion_type == 'issue' else '매뉴얼'} 업무 지식으로 등록하시겠습니까?"
+                bot_response += f"{reason} 이 내용을 QnA 게시판의 새로운 질문으로 등록하시겠습니까?"
                 # Add marker for UI to show knowledge registration buttons
                 bot_response += "|KNOWLEDGE_BUTTONS"
             
