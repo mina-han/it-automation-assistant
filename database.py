@@ -628,12 +628,12 @@ class DatabaseManager:
             conn = self.get_connection()
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT a.id, a.content, a.created_at, a.is_accepted,
+                SELECT a.id, a.content, a.created_at, false as is_accepted,
                        u.name as answerer_name, u.department, a.author_id
                 FROM qna_answers a
                 LEFT JOIN users u ON a.author_id = u.id
                 WHERE a.question_id = %s
-                ORDER BY a.is_accepted DESC, a.created_at ASC
+                ORDER BY a.created_at ASC
             """, (question_id,))
             answers = cursor.fetchall()
             cursor.close()

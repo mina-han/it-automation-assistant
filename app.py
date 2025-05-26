@@ -842,18 +842,18 @@ elif page == "📋 나의 대화 이력":
     st.header("📋 나의 대화 이력")
     
     # Control buttons
-    col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
+    col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
-        if st.button("🔄 새로고침", key="refresh_history"):
+        if st.button("🔄 새로고침", key="refresh_history", use_container_width=True):
             st.rerun()
     with col2:
-        if st.button("🗑️ 현재 세션 삭제", key="clear_session_history"):
+        if st.button("🗑️ 현재 세션 삭제", key="clear_session_history", use_container_width=True):
             st.session_state.chat_history = []
             st.session_state.conversation_context = []
             st.success("현재 세션의 대화 기록이 삭제되었습니다.")
             st.rerun()
     with col3:
-        if st.button("🗑️ 전체 DB 삭제", key="clear_all_history"):
+        if st.button("🗑️ 전체 DB 삭제", key="clear_all_history", use_container_width=True):
             st.session_state.db_manager.clear_all_chat_history()
             st.success("모든 대화 이력이 삭제되었습니다.")
             st.rerun()
@@ -868,8 +868,6 @@ elif page == "📋 나의 대화 이력":
         chat_history = []
     
     if chat_history:
-        st.markdown(f"**총 {len(chat_history)}개의 대화가 기록되어 있습니다.**")
-        
         for history in chat_history:
             history_id, user_message, bot_response, related_knowledge_json, created_at = history
             
@@ -984,7 +982,8 @@ elif page == "❓ QnA 게시판":
                     """
                     st.markdown(card_html, unsafe_allow_html=True)
                     
-                    if st.button("📋 질문 상세보기", key=f"card_{q_id}", use_container_width=True):
+                    # 숨겨진 버튼으로 카드 클릭 기능 구현
+                    if st.button("클릭하여 상세보기", key=f"card_{q_id}"):
                         st.session_state.selected_question_id = q_id
                         st.session_state.current_page = "QnA 질문 상세"
                         st.rerun()
@@ -1206,28 +1205,127 @@ elif page == "👤 나의 정보":
     
     with tab1:
         # Show user's knowledge contributions
-        user_knowledge = st.session_state.db_manager.get_all_knowledge()
-        user_contributions = [k for k in user_knowledge if len(k) > 6 and k[6] == user[0]] if user and isinstance(user, (list, tuple)) and len(user) > 0 else []
-        
-        if user_contributions:
-            st.markdown(f"**총 {len(user_contributions)}개의 업무 지식을 등록했습니다.**")
-            for knowledge in user_contributions:
-                st.markdown(f"- **{knowledge[1]}** ({knowledge[5]} | 조회수: {knowledge[6]})")
+        if user and len(user) > 0:
+            user_id = user[0]
+            try:
+                conn = st.session_state.db_manager.get_connection()
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT id, title, content, keywords, knowledge_type, view_count, created_at 
+                    FROM work_knowledge 
+                    WHERE user_id = %s 
+                    ORDER BY created_at DESC
+                """, (user_id,))
+                user_contributions = cursor.fetchall()
+                cursor.close()
+                conn.close()
+                
+                if user_contributions:
+                    st.markdown(f"**총 {len(user_contributions)}개의 업무 지식을 등록했습니다.**")
+                    for knowledge in user_contributions:
+                        knowledge_id, title, content, keywords, knowledge_type, view_count, created_at = knowledge
+                        st.markdown(f"- **{title}** ({knowledge_type} | 조회수: {view_count}회 | {created_at.strftime('%Y-%m-%d')})")
+                else:
+                    st.info("아직 등록한 업무 지식이 없습니다.")
+            except Exception as e:
+                st.error(f"업무 지식 정보를 불러오는 중 오류가 발생했습니다: {e}")
         else:
-            st.info("아직 등록한 업무 지식이 없습니다.")
+            st.info("로그인이 필요합니다.")
     
     with tab2:
-        st.markdown("QnA 게시판 활동 내역을 확인할 수 있습니다.")
-        st.info("QnA 활동 내역 기능은 추후 업데이트 예정입니다.")
+        # Show user's QnA activities
+        if user and len(user) > 0:
+            user_id = user[0]
+            try:
+                conn = st.session_state.db_manager.get_connection()
+                cursor = conn.cursor()
+                
+                # 등록한 질문 수
+                cursor.execute("SELECT COUNT(*) FROM qna_board WHERE questioner_id = %s", (user_id,))
+                question_count = cursor.fetchone()[0]
+                
+                # 작성한 답변 수
+                cursor.execute("SELECT COUNT(*) FROM qna_answers WHERE author_id = %s", (user_id,))
+                answer_count = cursor.fetchone()[0]
+                
+                # 최근 질문들
+                cursor.execute("""
+                    SELECT title, created_at 
+                    FROM qna_board 
+                    WHERE questioner_id = %s 
+                    ORDER BY created_at DESC LIMIT 5
+                """, (user_id,))
+                recent_questions = cursor.fetchall()
+                
+                cursor.close()
+                conn.close()
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("등록한 질문", f"{question_count}개")
+                with col2:
+                    st.metric("작성한 답변", f"{answer_count}개")
+                
+                if recent_questions:
+                    st.markdown("### 📝 최근 등록한 질문")
+                    for question_title, created_at in recent_questions:
+                        st.markdown(f"- **{question_title}** ({created_at.strftime('%Y-%m-%d')})")
+                else:
+                    st.info("아직 등록한 질문이 없습니다.")
+                    
+            except Exception as e:
+                st.error(f"QnA 활동 정보를 불러오는 중 오류가 발생했습니다: {e}")
+        else:
+            st.info("로그인이 필요합니다.")
     
     with tab3:
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("등록한 지식", len(user_contributions) if 'user_contributions' in locals() else 0)
-        with col2:
-            st.metric("현재 레벨", level)
-        with col3:
-            st.metric("총 경험치", experience)
+        # Show activity statistics
+        if user and len(user) > 0:
+            user_id = user[0]
+            try:
+                conn = st.session_state.db_manager.get_connection()
+                cursor = conn.cursor()
+                
+                # 등록한 업무 지식 수
+                cursor.execute("SELECT COUNT(*) FROM work_knowledge WHERE user_id = %s", (user_id,))
+                knowledge_count = cursor.fetchone()[0]
+                
+                # QnA 활동 수
+                cursor.execute("SELECT COUNT(*) FROM qna_board WHERE questioner_id = %s", (user_id,))
+                question_count = cursor.fetchone()[0]
+                
+                cursor.execute("SELECT COUNT(*) FROM qna_answers WHERE author_id = %s", (user_id,))
+                answer_count = cursor.fetchone()[0]
+                
+                # 대화 수
+                cursor.execute("SELECT COUNT(*) FROM chat_history WHERE user_id = %s", (user_id,))
+                chat_count = cursor.fetchone()[0]
+                
+                cursor.close()
+                conn.close()
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("등록한 지식", f"{knowledge_count}개")
+                    st.metric("QnA 질문", f"{question_count}개")
+                with col2:
+                    st.metric("현재 레벨", level)
+                    st.metric("QnA 답변", f"{answer_count}개")
+                with col3:
+                    st.metric("총 경험치", f"{experience}점")
+                    st.metric("대화 수", f"{chat_count}개")
+                    
+            except Exception as e:
+                st.error(f"활동 통계를 불러오는 중 오류가 발생했습니다: {e}")
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("등록한 지식", "0개")
+                with col2:
+                    st.metric("현재 레벨", level)
+                with col3:
+                    st.metric("총 경험치", f"{experience}점")
+        else:
+            st.info("로그인이 필요합니다.")
 
 elif page == "🏆 대시보드":
     st.header("🏆 사용자 랭킹 대시보드")
