@@ -290,8 +290,16 @@ if "show_account_settings" in st.session_state and st.session_state.show_account
     st.markdown("### ⚙️ 내 계정 정보 변경")
     
     user = st.session_state.current_user
-    current_name = user[2] if user and len(user) > 2 else ""
-    current_department = user[3] if user and len(user) > 3 else ""
+    if user:
+        try:
+            current_name = user[2] if isinstance(user, (list, tuple)) and len(user) > 2 else ""
+            current_department = user[3] if isinstance(user, (list, tuple)) and len(user) > 3 else ""
+        except (IndexError, KeyError, TypeError):
+            current_name = ""
+            current_department = ""
+    else:
+        current_name = ""
+        current_department = ""
     
     with st.form("account_update_form"):
         st.markdown(f"**계정 아이디:** {user[1]} (변경 불가)")
@@ -481,7 +489,7 @@ elif page == "📝 업무 지식 등록":
                 
                 # Save to database with user ID for points
                 user = st.session_state.current_user
-                user_id = user[0] if user else None
+                user_id = user[0] if user and isinstance(user, (list, tuple)) and len(user) > 0 else None
                 knowledge_id = st.session_state.db_manager.add_knowledge(title, content, keywords, knowledge_type, user_id)
                 
                 # Update RAG embeddings
@@ -733,7 +741,7 @@ elif page == "❓ QnA 게시판":
             if st.form_submit_button("질문 등록", type="primary"):
                 if question_title and question_content:
                     user = st.session_state.current_user
-                    user_id = user[0] if user else None
+                    user_id = user[0] if user and isinstance(user, (list, tuple)) and len(user) > 0 else None
                     
                     if user_id:
                         question_id = st.session_state.db_manager.add_qna_question(
@@ -753,11 +761,16 @@ elif page == "👤 나의 정보":
     st.header("👤 나의 정보")
     
     user = st.session_state.current_user
-    if user:
-        name = user[2] if len(user) > 2 else "사용자"
-        department = user[3] if len(user) > 3 else "부서 없음"
-        experience = user[4] if len(user) > 4 else 0
-        level = user[5] if len(user) > 5 else 1
+    if user and isinstance(user, (list, tuple)):
+        try:
+            name = user[2] if len(user) > 2 else "사용자"
+            department = user[3] if len(user) > 3 else "부서 없음"
+            experience = user[4] if len(user) > 4 else 0
+            level = user[5] if len(user) > 5 else 1
+        except (IndexError, KeyError, TypeError):
+            name, department, experience, level = "사용자", "부서 없음", 0, 1
+    else:
+        name, department, experience, level = "사용자", "부서 없음", 0, 1
         
         # User info card
         st.markdown(f"""
