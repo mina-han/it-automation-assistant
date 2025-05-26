@@ -4,6 +4,7 @@ from datetime import datetime
 import json
 import logging
 import hashlib
+import pytz
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -24,6 +25,15 @@ class DatabaseManager:
             self.database_url = os.getenv('DATABASE_URL')
         else:
             self.database_url = None
+        
+        # KST 시간대 설정
+        self.kst = pytz.timezone('Asia/Seoul')
+        
+        self.init_database()
+    
+    def _get_kst_now(self):
+        """현재 KST 시간 반환"""
+        return datetime.now(self.kst)
     
     def _hash_password(self, password: str) -> str:
         """Hash password using SHA-256"""
