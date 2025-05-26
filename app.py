@@ -219,8 +219,8 @@ if st.session_state.current_user is None:
     # Show login/register page
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        # Display SHOO character
-        st.image("attached_assets/image_1748235445541.png", width=300)
+        # Display SHOO character with 40% width
+        st.image("attached_assets/image_1748235445541.png", use_container_width=True)
         
         # Login/Register/Password Reset tabs
         tab1, tab2, tab3 = st.tabs(["로그인", "회원가입", "비밀번호 변경"])
@@ -372,8 +372,8 @@ with col1:
 with col2:
     st.markdown('<div class="mascot-header">', unsafe_allow_html=True)
     
-    # Display new SHOO character image
-    st.image("attached_assets/image_1748235445541.png", width=600)
+    # Display new SHOO character image with optimal size
+    st.image("attached_assets/image_1748235445541.png", width=400)
     
     st.markdown("""
     </div>
