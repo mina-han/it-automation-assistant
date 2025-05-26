@@ -499,6 +499,10 @@ if page == "💬 대화하기":
                         # 기본 메시지를 대화 내역에 추가
                         st.session_state.chat_history.append((user_input, base_message))
                         
+                        # QnA 등록 제안 상태를 세션에 저장
+                        st.session_state.show_qna_suggestion = True
+                        st.session_state.pending_qna_question = user_input
+                        
                         # 데이터베이스에 저장
                         user = st.session_state.current_user
                         user_id = user[0] if user and isinstance(user, (list, tuple)) and len(user) > 0 else None
@@ -506,33 +510,6 @@ if page == "💬 대화하기":
                             st.session_state.db_manager.save_chat_history(user_input, base_message, user_id=user_id)
                         except Exception as e:
                             st.error(f"대화 저장 중 오류가 발생했습니다: {e}")
-                        
-                        # QnA 등록 제안 UI 표시
-                        st.markdown("---")
-                        
-                        col1, col2 = st.columns([1, 1])
-                        with col1:
-                            if st.button("✅ 예", key=f"qna_register_yes_{len(st.session_state.chat_history)}", type="primary", use_container_width=True):
-                                # QnA 게시판에 질문 등록
-                                if user_id:
-                                    question_id = st.session_state.db_manager.add_qna_question_from_chat(
-                                        user_input, user_id
-                                    )
-                                    if question_id:
-                                        # 제목 생성 (앞 20자)
-                                        title = user_input[:20] + ('...' if len(user_input) > 20 else '')
-                                        st.success(f"✅ 질문이 QnA 게시판에 등록되었습니다!")
-                                        st.info(f"📝 제목: {title}")
-                                        st.info(f"📊 카테고리: 데이터베이스 | 유형: issue | 상태: 대기중")
-                                        st.info("🎉 질문 등록으로 2점의 경험치를 획득했습니다!")
-                                    else:
-                                        st.error("❌ 질문 등록 중 오류가 발생했습니다.")
-                                else:
-                                    st.error("❌ 로그인이 필요합니다.")
-                                st.rerun()
-                        with col2:
-                            if st.button("❌ 아니오", key=f"qna_register_no_{len(st.session_state.chat_history)}", use_container_width=True):
-                                st.rerun()
                     else:
                         # 정상 응답일 때만 대화 내역에 저장
                         try:
@@ -575,6 +552,49 @@ if page == "💬 대화하기":
                     
                     st.session_state.chat_history.append((user_input, response))
                     st.rerun()
+    
+    # QnA 등록 제안 UI (전송 버튼 외부에서 표시)
+    if st.session_state.get('show_qna_suggestion', False):
+        st.markdown("---")
+        st.markdown("### 💡 QnA 게시판 등록 제안")
+        
+        pending_question = st.session_state.get('pending_qna_question', '')
+        st.markdown(f"**질문:** {pending_question}")
+        
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            if st.button("✅ 예", key="qna_register_yes_external", type="primary", use_container_width=True):
+                # QnA 게시판에 질문 등록
+                user = st.session_state.current_user
+                user_id = user[0] if user and isinstance(user, (list, tuple)) and len(user) > 0 else None
+                
+                if user_id:
+                    question_id = st.session_state.db_manager.add_qna_question_from_chat(
+                        pending_question, user_id
+                    )
+                    if question_id:
+                        # 제목 생성 (앞 20자)
+                        title = pending_question[:20] + ('...' if len(pending_question) > 20 else '')
+                        st.success(f"✅ 질문이 QnA 게시판에 등록되었습니다!")
+                        st.info(f"📝 제목: {title}")
+                        st.info(f"📊 카테고리: 데이터베이스 | 유형: issue | 상태: 대기중")
+                        st.info("🎉 질문 등록으로 2점의 경험치를 획득했습니다!")
+                    else:
+                        st.error("❌ 질문 등록 중 오류가 발생했습니다.")
+                else:
+                    st.error("❌ 로그인이 필요합니다.")
+                
+                # 제안 상태 초기화
+                st.session_state.show_qna_suggestion = False
+                st.session_state.pending_qna_question = ''
+                st.rerun()
+                
+        with col2:
+            if st.button("❌ 아니오", key="qna_register_no_external", use_container_width=True):
+                # 제안 상태 초기화
+                st.session_state.show_qna_suggestion = False
+                st.session_state.pending_qna_question = ''
+                st.rerun()
     
     # Show conversation stats
     if st.session_state.chat_history:
