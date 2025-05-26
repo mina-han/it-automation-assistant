@@ -947,10 +947,10 @@ elif page == "🔍 업무 지식 조회":
                                         st.rerun()
                         except Exception as e:
                             is_author = False
-                    
-                    # Edit/Delete options
-                    if is_author and st.session_state.get(f'show_knowledge_edit_{knowledge_id}', False):
-                        col1, col2 = st.columns(2)
+                        
+                        # Edit/Delete options
+                        if is_author and st.session_state.get(f'show_knowledge_edit_{knowledge_id}', False):
+                            col1, col2 = st.columns(2)
                         with col1:
                             if st.button("✏️ 수정", key=f"edit_knowledge_{knowledge_id}"):
                                 st.session_state[f'editing_knowledge_{knowledge_id}'] = True
