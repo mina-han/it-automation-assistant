@@ -475,7 +475,33 @@ if page == "💬 대화하기":
                         related_issues_section = "📚 **관련 유사 이슈들:**" + parts[1]
                         
                         st.markdown(f"**🤖 물어보SHOO:** {main_message}")
-                        st.markdown(related_issues_section)
+                        
+                        # 관련 유사 이슈들 섹션을 파싱하여 링크를 버튼으로 변환
+                        st.markdown("**📚 관련 유사 이슈들:**")
+                        import re
+                        
+                        # [LINK:ID]제목[/LINK] 패턴을 찾아서 버튼으로 변환
+                        link_pattern = r'\[LINK:(\d+)\](.*?)\[/LINK\]'
+                        matches = re.findall(link_pattern, related_issues_section)
+                        
+                        if matches:
+                            for knowledge_id, title in matches:
+                                # 유사도 정보 추출
+                                similarity_pattern = rf'\[LINK:{knowledge_id}\].*?\[/LINK\]\s*\(유사도:\s*(\d+%)\)'
+                                similarity_match = re.search(similarity_pattern, related_issues_section)
+                                similarity = similarity_match.group(1) if similarity_match else "N/A"
+                                
+                                # 클릭 가능한 버튼으로 표시
+                                if st.button(f"🔗 {title} (유사도: {similarity})", 
+                                           key=f"knowledge_link_{i}_{knowledge_id}",
+                                           help="클릭하여 상세보기로 이동"):
+                                    st.session_state.current_page = "🔍 업무 지식 조회"
+                                    st.session_state.selected_knowledge_id = int(knowledge_id)
+                                    st.rerun()
+                        else:
+                            # 링크가 없는 경우 기본 텍스트 표시
+                            clean_section = re.sub(link_pattern, r'\2', related_issues_section)
+                            st.markdown(clean_section)
                         
                         # 관련 유사 이슈들 바로 밑에 QnA 등록 버튼들 표시
                         col1, col2 = st.columns([1, 1])
@@ -778,69 +804,119 @@ elif page == "📝 업무 지식 등록":
 
 elif page == "🔍 업무 지식 조회":
     
-    # Search and filter options
-    col1, col2, col3 = st.columns([2, 1, 1])
-    with col1:
-        search_query = st.text_input("업무 지식 검색", placeholder="제목, 내용, 키워드로 검색...")
-    with col2:
-        knowledge_type_filter = st.selectbox("구분 타입", ["전체", "이슈", "메뉴얼"])
-    with col3:
-        sort_option = st.selectbox("정렬", ["조회수 높은 순", "최신 순", "제목 순"])
+    # Check if specific knowledge is selected from chat link
+    selected_knowledge_id = st.session_state.get('selected_knowledge_id', None)
     
-    # Get knowledge from database
-    filter_type = None if knowledge_type_filter == "전체" else knowledge_type_filter
-    knowledge_list = st.session_state.db_manager.get_all_knowledge(search_query, sort_option, filter_type)
-    
-    if knowledge_list:
-        st.markdown(f"**총 {len(knowledge_list)}개의 업무 지식이 발견되었습니다.**")
-        
-        for knowledge in knowledge_list:
+    if selected_knowledge_id:
+        # Show specific knowledge detail
+        knowledge = st.session_state.db_manager.get_knowledge_by_id(selected_knowledge_id)
+        if knowledge:
             knowledge_id, title, content, keywords_str, knowledge_type, view_count, created_at = knowledge
             
-            # Create modern knowledge card with edit/delete options
-            preview = content[:100] + "..." if len(content) > 100 else content
+            # Increment view count
+            st.session_state.db_manager.increment_view_count(knowledge_id)
             
-            # Check if current user is the author
-            current_user = st.session_state.get('current_user', None)
-            user_id = current_user[0] if current_user and len(current_user) > 0 else None
+            # Back button
+            if st.button("← 목록으로 돌아가기"):
+                st.session_state.selected_knowledge_id = None
+                st.rerun()
             
-            # Knowledge type badge color
+            st.markdown("---")
+            
+            # Display knowledge details
             type_color = "#4CAF50" if knowledge_type == "메뉴얼" else "#2196F3"
+            st.markdown(f'<span style="background-color: {type_color}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8em;">{knowledge_type}</span>', unsafe_allow_html=True)
+            st.markdown(f"## 📋 {title}")
             
-            card_html = f'''
-            <div class="knowledge-card" style="cursor: pointer;">
-                <div class="knowledge-title">
-                    <span class="type-badge" style="background-color: {type_color};">{knowledge_type}</span>
-                    📄 {title}
-                </div>
-                <div class="knowledge-preview">{preview}</div>
-            '''
-            
-            # Add keywords as tags
+            # Keywords
             if keywords_str:
                 keywords = keywords_str.split(',')
-                tags_html = '<div class="knowledge-tags">'
+                keyword_html = ""
                 for kw in keywords:
-                    tags_html += f'<span class="knowledge-tag">#{kw.strip()}</span>'
-                tags_html += '</div>'
-                card_html += tags_html
+                    keyword_html += f'<span style="background-color: #f0f0f0; color: #333; padding: 2px 6px; border-radius: 12px; font-size: 0.8em; margin-right: 5px;">#{kw.strip()}</span>'
+                st.markdown(keyword_html, unsafe_allow_html=True)
             
-            # Add metadata
-            card_html += f'''
-                <div class="knowledge-meta">
-                    <span>등록일: {created_at.strftime("%Y-%m-%d") if created_at else "정보 없음"}</span>
-                    <span>조회수: {view_count}</span>
-                </div>
-            </div>
-            '''
+            st.markdown("### 📄 전체 내용:")
+            st.markdown(content)
             
-            # Create a single container for the card
-            with st.container():
-                # Display the card HTML first
-                st.markdown(card_html, unsafe_allow_html=True)
+            # Metadata
+            st.markdown("---")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown(f"**등록일:** {created_at.strftime('%Y-%m-%d') if created_at else '정보 없음'}")
+            with col2:
+                st.markdown(f"**조회수:** {view_count + 1}")  # +1 because we just incremented it
+            
+            # Clear selection after displaying
+            st.session_state.selected_knowledge_id = None
+        else:
+            st.error("❌ 요청한 업무 지식을 찾을 수 없습니다.")
+            st.session_state.selected_knowledge_id = None
+    
+    else:
+        # Search and filter options
+        col1, col2, col3 = st.columns([2, 1, 1])
+        with col1:
+            search_query = st.text_input("업무 지식 검색", placeholder="제목, 내용, 키워드로 검색...")
+        with col2:
+            knowledge_type_filter = st.selectbox("구분 타입", ["전체", "이슈", "메뉴얼"])
+        with col3:
+            sort_option = st.selectbox("정렬", ["조회수 높은 순", "최신 순", "제목 순"])
+        
+        # Get knowledge from database
+        filter_type = None if knowledge_type_filter == "전체" else knowledge_type_filter
+        knowledge_list = st.session_state.db_manager.get_all_knowledge(search_query, sort_option, filter_type)
+        
+        if knowledge_list:
+            st.markdown(f"**총 {len(knowledge_list)}개의 업무 지식이 발견되었습니다.**")
+            
+            for knowledge in knowledge_list:
+                knowledge_id, title, content, keywords_str, knowledge_type, view_count, created_at = knowledge
                 
-                # Hidden button for card click functionality
-                if st.button("📄 상세보기", key=f"card_btn_{knowledge_id}"):
+                # Create modern knowledge card with edit/delete options
+                preview = content[:100] + "..." if len(content) > 100 else content
+                
+                # Check if current user is the author
+                current_user = st.session_state.get('current_user', None)
+                user_id = current_user[0] if current_user and len(current_user) > 0 else None
+                
+                # Knowledge type badge color
+                type_color = "#4CAF50" if knowledge_type == "메뉴얼" else "#2196F3"
+                
+                card_html = f'''
+                <div class="knowledge-card" style="cursor: pointer;">
+                    <div class="knowledge-title">
+                        <span class="type-badge" style="background-color: {type_color};">{knowledge_type}</span>
+                        📄 {title}
+                    </div>
+                    <div class="knowledge-preview">{preview}</div>
+                '''
+                
+                # Add keywords as tags
+                if keywords_str:
+                    keywords = keywords_str.split(',')
+                    tags_html = '<div class="knowledge-tags">'
+                    for kw in keywords:
+                        tags_html += f'<span class="knowledge-tag">#{kw.strip()}</span>'
+                    tags_html += '</div>'
+                    card_html += tags_html
+                
+                # Add metadata
+                card_html += f'''
+                    <div class="knowledge-meta">
+                        <span>등록일: {created_at.strftime("%Y-%m-%d") if created_at else "정보 없음"}</span>
+                        <span>조회수: {view_count}</span>
+                    </div>
+                </div>
+                '''
+                
+                # Create a single container for the card
+                with st.container():
+                    # Display the card HTML first
+                    st.markdown(card_html, unsafe_allow_html=True)
+                    
+                    # Hidden button for card click functionality
+                    if st.button("📄 상세보기", key=f"card_btn_{knowledge_id}"):
                     # Increment view count when clicked
                     st.session_state.db_manager.increment_view_count(knowledge_id)
                     

@@ -100,7 +100,9 @@ class ChatBot:
             if related_issues:
                 bot_response += f"\n\n📚 **관련 유사 이슈들:**\n"
                 for issue in related_issues[:3]:  # Show top 3
-                    bot_response += f"• {issue['title']} (유사도: {issue['similarity']:.0%})\n"
+                    # Include issue ID for linking
+                    issue_id = issue.get('id', 'unknown')
+                    bot_response += f"• [LINK:{issue_id}]{issue['title']}[/LINK] (유사도: {issue['similarity']:.0%})\n"
             
             # Remove inappropriate responses for perfect matches
             if has_perfect_matches:
