@@ -48,20 +48,21 @@ class ChatBot:
             # Check if this is a new knowledge that should be registered
             registration_analysis = self._should_suggest_knowledge_registration(user_message, related_issues)
             
-            # Prepare the conversation context with stronger emphasis on stored knowledge
+            # Check if we have relevant stored knowledge
             if related_issues:
                 context_prompt = f"""
-아래는 저장된 업무 지식 정보입니다. 이 정보를 최우선으로 활용하여 정확한 답변을 제공해주세요:
+아래는 저장된 업무 지식 정보입니다. 이 정보만을 활용하여 정확한 답변을 제공해주세요:
 
 {context}
 
-주의사항:
-1. 위 업무 지식에 관련 정보가 있다면 반드시 그 내용을 기반으로 답변하세요.
+중요한 규칙:
+1. 위 업무 지식에 관련 정보가 있다면 반드시 그 내용만을 기반으로 답변하세요.
 2. 저장된 지식의 단계별 가이드가 있다면 그대로 따라서 설명해주세요.
-3. 일반적인 지식보다 저장된 업무 지식을 우선하여 답변하세요.
+3. 위 지식에 없는 내용은 절대 추가하지 마세요.
 """
             else:
-                context_prompt = "저장된 업무 지식에서 직접 관련된 정보를 찾지 못했습니다. 일반적인 IT 지식을 바탕으로 도움을 드리겠습니다."
+                # No relevant knowledge found - should suggest QnA registration
+                return "SUGGEST_QNA_REGISTRATION"
             
             # Prepare messages for OpenAI API with conversation history
             messages = [{"role": "system", "content": self.system_prompt}]

@@ -479,7 +479,7 @@ if page == "💬 대화하기":
                         st.error(f"대화 저장 중 오류가 발생했습니다: {e}")
                     
                     # 답변이 없을 때 QnA 등록 제안
-                    if "저장된 업무 지식이 없습니다" in response or "관련 정보를 찾을 수 없습니다" in response or "현재 질문에 대한" in response:
+                    if response == "SUGGEST_QNA_REGISTRATION":
                         st.markdown("---")
                         st.markdown("### 💡 이 이슈(혹은 메뉴얼)에 대해 QnA 게시판의 질문으로 새로 등록하시겠습니까?")
                         st.markdown("현재 저장된 업무 지식에 없는 내용입니다. QnA 게시판에 질문으로 등록하여 다른 동료들의 도움을 받아보세요!")
@@ -671,18 +671,6 @@ elif page == "📝 업무 지식 등록":
                 st.rerun()
 
 elif page == "🔍 업무 지식 조회":
-    # Main title styling
-    st.markdown("""
-    <div style="text-align: center; margin-bottom: 2rem;">
-        <h1 style="font-size: 2.8rem; font-weight: bold; color: #B5A081; margin-bottom: 0.5rem; 
-                   line-height: 1.2; text-shadow: 1px 1px 2px rgba(181, 160, 129, 0.3);">
-            물어보 SHOO
-        </h1>
-        <p style="font-size: 1rem; color: #888; margin-bottom: 2rem;">
-            IT 실무자를 위한 업무 지식 도우미
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
     
     # Search and filter options
     col1, col2, col3 = st.columns([2, 1, 1])
@@ -714,7 +702,7 @@ elif page == "🔍 업무 지식 조회":
             type_color = "#4CAF50" if knowledge_type == "메뉴얼" else "#2196F3"
             
             card_html = f'''
-            <div class="knowledge-card">
+            <div class="knowledge-card" onclick="document.getElementById('card_btn_{knowledge_id}').click();" style="cursor: pointer;">
                 <div class="knowledge-title">
                     <span class="type-badge" style="background-color: {type_color};">{knowledge_type}</span>
                     📄 {title}
@@ -745,8 +733,8 @@ elif page == "🔍 업무 지식 조회":
                 # Display the card HTML first
                 st.markdown(card_html, unsafe_allow_html=True)
                 
-                # Make the card clickable using expander
-                if st.button("자세히 보기", key=f"knowledge_{knowledge_id}"):
+                # Hidden button for card click functionality
+                if st.button("📄 상세보기", key=f"card_btn_{knowledge_id}"):
                     # Increment view count when clicked
                     st.session_state.db_manager.increment_view_count(knowledge_id)
                     
