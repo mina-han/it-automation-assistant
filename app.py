@@ -363,7 +363,7 @@ with col2:
     """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 with col3:
-    # 우측 상단 사용자 메뉴
+    # 우측 상단 사용자 메뉴 (드롭다운 형태)
     if hasattr(st.session_state, 'current_user') and st.session_state.current_user:
         user = st.session_state.current_user
         user_name = user[2] if len(user) > 2 else "사용자"
@@ -376,16 +376,21 @@ with col3:
         </div>
         """, unsafe_allow_html=True)
         
-        # 계정 설정 버튼
-        if st.button("⚙️ 계정 정보 변경", key="account_settings_top"):
+        # 드롭다운 메뉴
+        menu_option = st.selectbox(
+            "⋮", 
+            ["메뉴 선택", "⚙️ 계정 정보 변경", "🚪 로그아웃"],
+            key="user_menu_dropdown",
+            label_visibility="collapsed"
+        )
+        
+        # 메뉴 선택에 따른 동작
+        if menu_option == "⚙️ 계정 정보 변경":
             st.session_state.show_account_settings = True
             st.rerun()
-        
-        # 로그아웃 버튼
-        if st.button("🚪 로그아웃", key="logout_top"):
+        elif menu_option == "🚪 로그아웃":
             st.session_state.current_user = None
             st.session_state.show_account_settings = False
-            # 페이지를 대화하기로 리셋
             st.session_state.current_page = "💬 대화하기"
             st.rerun()
 
