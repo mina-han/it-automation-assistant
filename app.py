@@ -68,6 +68,50 @@ st.markdown("""
         justify-content: center;
         margin-bottom: 2rem;
     }
+    
+    /* Modern Sidebar Styles */
+    .sidebar .sidebar-content {
+        background-color: #f7f7f8 !important;
+        border-right: 1px solid #e5e5e7;
+    }
+    
+    .modern-nav-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+        margin: 4px 8px;
+        border-radius: 8px;
+        text-decoration: none;
+        color: #374151;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        border: none;
+        background: none;
+        width: calc(100% - 16px);
+        text-align: left;
+        font-size: 14px;
+    }
+    
+    .modern-nav-item:hover {
+        background-color: #f3f4f6;
+        color: #1f2937;
+        transform: translateX(2px);
+    }
+    
+    .modern-nav-item.active {
+        background-color: #10b981;
+        color: white;
+    }
+    
+    .modern-nav-item.active:hover {
+        background-color: #059669;
+    }
+    
+    .nav-icon {
+        margin-right: 12px;
+        font-size: 1.1em;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -87,6 +131,9 @@ if 'chat_history' not in st.session_state:
 
 if 'conversation_context' not in st.session_state:
     st.session_state.conversation_context = []
+
+if 'current_page' not in st.session_state:
+    st.session_state.current_page = "💬 대화하기"
 
 # Main header with logo and branding
 col1, col2, col3 = st.columns([1, 2, 1])
@@ -108,13 +155,33 @@ with col2:
     """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# Sidebar navigation
-st.sidebar.title("📋 메뉴")
-page = st.sidebar.radio(
-    "기능 선택",
-    ["💬 대화하기", "📝 업무 지식 등록", "🔍 업무 지식 조회", "📋 나의 대화 이력"],
-    index=0
-)
+# Modern Sidebar Navigation
+with st.sidebar:
+    st.markdown('<div style="margin-bottom: 20px;"><h3 style="color: #374151; margin-bottom: 16px;">📋 메뉴</h3></div>', unsafe_allow_html=True)
+    
+    # Navigation items with modern styling
+    nav_items = [
+        {"icon": "💬", "label": "대화하기", "value": "💬 대화하기"},
+        {"icon": "📝", "label": "업무 지식 등록", "value": "📝 업무 지식 등록"},
+        {"icon": "🔍", "label": "업무 지식 조회", "value": "🔍 업무 지식 조회"},
+        {"icon": "📋", "label": "나의 대화 이력", "value": "📋 나의 대화 이력"}
+    ]
+    
+    # Create navigation buttons
+    for item in nav_items:
+        is_active = st.session_state.current_page == item["value"]
+        
+        # Create button with custom styling
+        if st.button(
+            f"{item['icon']} {item['label']}", 
+            key=f"nav_{item['value']}", 
+            use_container_width=True,
+            type="primary" if is_active else "secondary"
+        ):
+            st.session_state.current_page = item["value"]
+            st.rerun()
+
+page = st.session_state.current_page
 
 # Main content based on selected page
 if page == "💬 대화하기":
