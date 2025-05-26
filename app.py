@@ -105,7 +105,8 @@ if st.session_state.current_user is None:
     st.stop()
 
 # Main app for logged-in users
-st.sidebar.markdown(f"### 👋 안녕하세요, {st.session_state.current_user['name']}님!")
+user_name = st.session_state.current_user[1] if isinstance(st.session_state.current_user, tuple) else st.session_state.current_user.get('name', '사용자')
+st.sidebar.markdown(f"### 👋 안녕하세요, {user_name}님!")
 
 # Navigation
 page = st.sidebar.selectbox(
@@ -127,10 +128,11 @@ if page == "🤖 AI 챗봇":
         st.session_state.chat_history.append({"user": user_input, "bot": response})
         
         # Save to database
+        user_id = st.session_state.current_user[0] if isinstance(st.session_state.current_user, tuple) else st.session_state.current_user.get('id')
         st.session_state.db_manager.save_chat_history(
             user_input, 
             response, 
-            user_id=st.session_state.current_user['id']
+            user_id=user_id
         )
     
     # Display chat history
@@ -154,9 +156,10 @@ elif page == "📚 업무 지식 관리":
             if title and content:
                 try:
                     keywords = extract_keywords(content)
+                    user_id = st.session_state.current_user[0] if isinstance(st.session_state.current_user, tuple) else st.session_state.current_user.get('id')
                     st.session_state.db_manager.add_knowledge(
                         title, content, keywords, knowledge_type,
-                        user_id=st.session_state.current_user['id']
+                        user_id=user_id
                     )
                     st.success("✅ 업무 지식이 등록되었습니다!")
                 except Exception as e:
@@ -192,11 +195,20 @@ elif page == "👤 내 정보":
     st.title("👤 내 정보")
     
     user = st.session_state.current_user
-    st.markdown(f"**이름:** {user['name']}")
-    st.markdown(f"**아이디:** {user['username']}")
-    st.markdown(f"**부서:** {user['department']}")
-    st.markdown(f"**경험치:** {user.get('experience_points', 0)}")
-    st.markdown(f"**레벨:** {user.get('level', 1)}")
+    if isinstance(user, tuple):
+        # Database returns tuple: (id, username, name, password_hash, department, experience_points, level, created_at)
+        user_id, username, name, _, department, experience_points, level, _ = user
+        st.markdown(f"**이름:** {name}")
+        st.markdown(f"**아이디:** {username}")
+        st.markdown(f"**부서:** {department}")
+        st.markdown(f"**경험치:** {experience_points or 0}")
+        st.markdown(f"**레벨:** {level or 1}")
+    else:
+        st.markdown(f"**이름:** {user.get('name', '정보 없음')}")
+        st.markdown(f"**아이디:** {user.get('username', '정보 없음')}")
+        st.markdown(f"**부서:** {user.get('department', '정보 없음')}")
+        st.markdown(f"**경험치:** {user.get('experience_points', 0)}")
+        st.markdown(f"**레벨:** {user.get('level', 1)}")
 
 # Logout button
 if st.sidebar.button("🚪 로그아웃"):
