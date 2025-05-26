@@ -513,22 +513,19 @@ if page == "💬 대화하기":
                         col1, col2 = st.columns([1, 1])
                         with col1:
                             if st.button("✅ 예", key=f"qna_register_yes_{len(st.session_state.chat_history)}", type="primary", use_container_width=True):
-                                # QnA 게시판에 질문 등록
-                                if user_id:
-                                    question_id = st.session_state.db_manager.add_qna_question_from_chat(
-                                        user_input, user_id
-                                    )
-                                    if question_id:
-                                        # 제목 생성 (앞 20자)
-                                        title = user_input[:20] + ('...' if len(user_input) > 20 else '')
-                                        st.success(f"✅ 질문이 QnA 게시판에 등록되었습니다!")
-                                        st.info(f"📝 제목: {title}")
-                                        st.info(f"📊 카테고리: 데이터베이스 | 유형: issue | 상태: 대기중")
-                                        st.info("🎉 질문 등록으로 2점의 경험치를 획득했습니다!")
-                                    else:
-                                        st.error("❌ 질문 등록 중 오류가 발생했습니다.")
+                                # QnA 게시판에 질문 등록 (임시 테스트용 ID 5 사용)
+                                question_id = st.session_state.db_manager.add_qna_question_from_chat(
+                                    user_input, 5  # 임시 테스트용 ID
+                                )
+                                if question_id:
+                                    # 제목 생성 (앞 20자)
+                                    title = user_input[:20] + ('...' if len(user_input) > 20 else '')
+                                    st.success(f"✅ 질문이 QnA 게시판에 등록되었습니다!")
+                                    st.info(f"📝 제목: {title}")
+                                    st.info(f"📊 카테고리: 데이터베이스 | 유형: issue | 상태: 대기중")
+                                    st.info("🎉 질문 등록으로 2점의 경험치를 획득했습니다!")
                                 else:
-                                    st.error("❌ 로그인이 필요합니다.")
+                                    st.error("❌ 질문 등록 중 오류가 발생했습니다.")
                                 st.rerun()
                         with col2:
                             if st.button("❌ 아니오", key=f"qna_register_no_{len(st.session_state.chat_history)}", use_container_width=True):
