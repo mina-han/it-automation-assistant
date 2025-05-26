@@ -452,11 +452,36 @@ if page == "💬 대화하기":
                     if len(st.session_state.conversation_context) > 5:
                         st.session_state.conversation_context = st.session_state.conversation_context[-5:]
                     
-                    # 자동으로 데이터베이스에 저장
+                    # 자동으로 데이터베이스에 저장 (사용자 ID 포함)
                     try:
+                        user = st.session_state.current_user
+                        user_id = user[0] if user and isinstance(user, (list, tuple)) and len(user) > 0 else None
                         st.session_state.db_manager.save_chat_history(user_input, response)
                     except Exception as e:
                         st.error(f"대화 저장 중 오류가 발생했습니다: {e}")
+                    
+                    # 답변에 QnA 등록 제안 추가
+                    if "저장된 업무 지식이 없습니다" in response or "관련 정보를 찾을 수 없습니다" in response:
+                        st.markdown("---")
+                        st.markdown("### 💡 QnA 게시판에 등록하시겠습니까?")
+                        st.markdown("관련 업무 지식이 없어 정확한 답변을 드리지 못했습니다.")
+                        
+                        col1, col2, col3 = st.columns([1, 1, 2])
+                        with col1:
+                            if st.button("✅ 예 (이슈)", key=f"qna_yes_issue_{len(st.session_state.chat_history)}"):
+                                st.session_state.qna_question = user_input
+                                st.session_state.qna_type = "issue"
+                                st.session_state.current_page = "❓ QnA 게시판"
+                                st.rerun()
+                        with col2:
+                            if st.button("✅ 예 (메뉴얼)", key=f"qna_yes_manual_{len(st.session_state.chat_history)}"):
+                                st.session_state.qna_question = user_input
+                                st.session_state.qna_type = "manual"
+                                st.session_state.current_page = "❓ QnA 게시판"
+                                st.rerun()
+                        with col3:
+                            if st.button("❌ 아니오", key=f"qna_no_{len(st.session_state.chat_history)}"):
+                                pass
                     
                     st.session_state.chat_history.append((user_input, response))
                     st.rerun()
@@ -771,9 +796,9 @@ elif page == "👤 나의 정보":
             name, department, experience, level = "사용자", "부서 없음", 0, 1
     else:
         name, department, experience, level = "사용자", "부서 없음", 0, 1
-        
-        # User info card
-        st.markdown(f"""
+    
+    # User info card
+    st.markdown(f"""
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                     padding: 20px; border-radius: 15px; margin: 20px 0; color: white;">
             <h2 style="margin: 0 0 15px 0;">🎯 {name}님의 프로필</h2>
@@ -785,43 +810,42 @@ elif page == "👤 나의 정보":
         </div>
         """, unsafe_allow_html=True)
         
-        # Progress bar for next level
-        next_level_exp = level * 100  # Simple leveling system
-        current_level_exp = experience % next_level_exp if next_level_exp > 0 else experience
-        progress = min(current_level_exp / next_level_exp if next_level_exp > 0 else 1, 1)
+    # Progress bar for next level
+    next_level_exp = level * 100  # Simple leveling system
+    current_level_exp = experience % next_level_exp if next_level_exp > 0 else experience
+    progress = min(current_level_exp / next_level_exp if next_level_exp > 0 else 1, 1)
+    
+    st.markdown("### 📊 레벨 진행도")
+    st.progress(progress)
+    st.markdown(f"다음 레벨까지: {next_level_exp - current_level_exp}점 필요")
+    
+    # Tabs for different info
+    tab1, tab2, tab3 = st.tabs(["📝 등록한 업무 지식", "❓ QnA 활동", "📈 활동 통계"])
+    
+    with tab1:
+        # Show user's knowledge contributions
+        user_knowledge = st.session_state.db_manager.get_all_knowledge()
+        user_contributions = [k for k in user_knowledge if len(k) > 6 and k[6] == user[0]] if user and len(user) > 0 else []
         
-        st.markdown("### 📊 레벨 진행도")
-        st.progress(progress)
-        st.markdown(f"다음 레벨까지: {next_level_exp - current_level_exp}점 필요")
-        
-        # Tabs for different info
-        tab1, tab2, tab3 = st.tabs(["📝 등록한 업무 지식", "❓ QnA 활동", "📈 활동 통계"])
-        
-        with tab1:
-            # Show user's knowledge contributions
-            user_knowledge = st.session_state.db_manager.get_all_knowledge()
-            user_contributions = [k for k in user_knowledge if len(k) > 6 and k[6] == user[0]]
-            
-            if user_contributions:
-                st.markdown(f"**총 {len(user_contributions)}개의 업무 지식을 등록했습니다.**")
-                for knowledge in user_contributions:
-                    st.markdown(f"- **{knowledge[1]}** ({knowledge[5]} | 조회수: {knowledge[6]})")
-            else:
-                st.info("아직 등록한 업무 지식이 없습니다.")
-        
-        with tab2:
-            st.markdown("QnA 게시판 활동 내역을 확인할 수 있습니다.")
-            # This would show user's questions and answers
-            st.info("QnA 활동 내역 기능은 추후 업데이트 예정입니다.")
-        
-        with tab3:
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("등록한 지식", len(user_contributions))
-            with col2:
-                st.metric("현재 레벨", level)
-            with col3:
-                st.metric("총 경험치", experience)
+        if user_contributions:
+            st.markdown(f"**총 {len(user_contributions)}개의 업무 지식을 등록했습니다.**")
+            for knowledge in user_contributions:
+                st.markdown(f"- **{knowledge[1]}** ({knowledge[5]} | 조회수: {knowledge[6]})")
+        else:
+            st.info("아직 등록한 업무 지식이 없습니다.")
+    
+    with tab2:
+        st.markdown("QnA 게시판 활동 내역을 확인할 수 있습니다.")
+        st.info("QnA 활동 내역 기능은 추후 업데이트 예정입니다.")
+    
+    with tab3:
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("등록한 지식", len(user_contributions) if 'user_contributions' in locals() else 0)
+        with col2:
+            st.metric("현재 레벨", level)
+        with col3:
+            st.metric("총 경험치", experience)
 
 elif page == "🏆 대시보드":
     st.header("🏆 사용자 랭킹 대시보드")
