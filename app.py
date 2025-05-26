@@ -122,7 +122,6 @@ if page == "💬 대화하기":
     st.markdown("자연어로 질문하시면 기존 이슈 해결 방안을 기반으로 답변드립니다.")
     
     # Chat interface
-    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
     
     # Chat history management buttons
     col1, col2, col3 = st.columns([2, 1, 1])
