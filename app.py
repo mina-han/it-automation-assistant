@@ -43,71 +43,74 @@ st.markdown("""
     
     .knowledge-card {
         background: white;
-        padding: 24px;
-        border-radius: 16px;
-        border: 1px solid #e0e0e0;
-        margin-bottom: 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+        padding: 32px;
+        border-radius: 20px;
+        border: 1px solid #f0f0f0;
+        margin-bottom: 24px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.04);
         transition: all 0.3s ease;
         cursor: pointer;
+        position: relative;
     }
     
     .knowledge-card:hover {
-        box-shadow: 0 15px 40px rgba(0,0,0,0.1);
-        transform: translateY(-4px);
-        border-color: #87CEEB;
+        box-shadow: 0 12px 35px rgba(0,0,0,0.08);
+        transform: translateY(-2px);
+        border-color: #e0e0e0;
     }
     
     .knowledge-title {
-        font-size: 1.3rem;
+        font-size: 1.4rem;
         font-weight: 700;
-        color: #222;
-        margin-bottom: 12px;
+        color: #1a1a1a;
+        margin-bottom: 16px;
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 16px;
     }
     
     .knowledge-preview {
-        color: #555;
+        color: #666;
         font-size: 1rem;
-        line-height: 1.6;
-        margin-bottom: 16px;
+        line-height: 1.7;
+        margin-bottom: 20px;
+        font-weight: 400;
     }
     
     .knowledge-tags {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 16px;
+        gap: 10px;
+        margin-top: 20px;
     }
     
     .knowledge-tag {
-        background: #f0f8ff;
-        color: #2563eb;
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 0.85rem;
+        background: #f8f9fa;
+        color: #495057;
+        padding: 8px 16px;
+        border-radius: 25px;
+        font-size: 0.9rem;
         font-weight: 500;
-        border: 1px solid #e3f2fd;
+        border: 1px solid #e9ecef;
     }
     
     .knowledge-meta {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-top: 16px;
+        margin-top: 20px;
         font-size: 0.9rem;
-        color: #666;
+        color: #868e96;
     }
     
     .type-badge {
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 0.85rem;
+        padding: 8px 16px;
+        border-radius: 25px;
+        font-size: 0.9rem;
         font-weight: 600;
         color: white;
-        margin-right: 12px;
+        margin-right: 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     .issue-title {
         font-size: 1.3rem;
