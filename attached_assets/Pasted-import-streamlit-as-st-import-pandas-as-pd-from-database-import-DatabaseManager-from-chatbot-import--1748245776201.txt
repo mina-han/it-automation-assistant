@@ -602,16 +602,9 @@ if page == "💬 대화하기":
                     user = st.session_state.current_user
                     user_id = user[0] if user and isinstance(user, (list, tuple)) and len(user) > 0 else None
                     
-                    # QnA 등록 제안이 있는 경우 (응답 내용 기반)
-                    if ("|SUGGEST_QNA_REGISTRATION" in response or 
-                        "해결 방법에 대한 정보가 포함되어 있지 않습니다" in response or
-                        "정보가 포함되어 있지 않습니다" in response):
-                        
-                        if "|SUGGEST_QNA_REGISTRATION" in response:
-                            base_message = response.split("|SUGGEST_QNA_REGISTRATION")[0]
-                        else:
-                            base_message = response
-                        
+                    # QnA 등록 제안이 있는 경우
+                    if "|SUGGEST_QNA_REGISTRATION" in response:
+                        base_message = response.split("|SUGGEST_QNA_REGISTRATION")[0]
                         response_with_buttons = base_message + "|QNA_BUTTONS"
                         st.session_state.chat_history.append((user_input, response_with_buttons))
                         

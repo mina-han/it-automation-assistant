@@ -62,7 +62,7 @@ class ChatBot:
 """
             else:
                 # No relevant knowledge found - should suggest QnA registration
-                return "⚠️ 현재 제공된 업무 지식에는 해당 질문에 대한 해결 정보가 없습니다. 이 질문을 QnA 게시판에 등록하시겠습니까?\n\n📚 **관련 유사 이슈들:**\n검색된 관련 이슈가 없습니다.|SUGGEST_QNA_REGISTRATION"
+                return "죄송합니다. 현재 제공된 저장된 업무 지식 정보에는 해당 질문에 대한 해결 방법에 대한 정보가 포함되어 있지 않습니다. 추가적인 정보를 제공해 주시면 도움이 될 수 있는 다른 방법을 찾아보겠습니다.\n\n📚 **관련 유사 이슈들:**\n검색된 관련 이슈가 없습니다.|SUGGEST_QNA_REGISTRATION"
             
             # Prepare messages for OpenAI API with conversation history
             messages = [{"role": "system", "content": self.system_prompt}]

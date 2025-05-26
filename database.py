@@ -109,6 +109,17 @@ class DatabaseManager:
                 )
             """)
             
+            # Create QnA answer likes table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS qna_answer_likes (
+                    id SERIAL PRIMARY KEY,
+                    answer_id INTEGER REFERENCES qna_board(id) ON DELETE CASCADE,
+                    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'Asia/Seoul'),
+                    UNIQUE(answer_id, user_id)
+                );
+            """)
+            
             # Create embeddings table for RAG
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS knowledge_embeddings (
