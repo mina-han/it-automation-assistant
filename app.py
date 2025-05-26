@@ -379,9 +379,14 @@ with col2:
 with col3:
     # 우측 상단 옵션 메뉴
     with st.popover("⚙️", use_container_width=False):
-        st.markdown("### 계정 설정")
+        st.markdown("### ℹ️ About")
+        st.markdown("**물어보SHOO** v1.0")
+        st.markdown("AI 기반 업무 지식 관리 플랫폼")
+        st.markdown("---")
         
-        if st.button("👤 내 계정 정보 변경", use_container_width=True):
+        st.markdown("### 👤 계정 설정")
+        
+        if st.button("🔧 내 계정 정보 변경", use_container_width=True):
             st.session_state.show_account_settings = True
             st.rerun()
         
@@ -1252,7 +1257,13 @@ elif page == "👤 나의 정보":
                     st.markdown(f"**총 {len(user_contributions)}개의 업무 지식을 등록했습니다.**")
                     for knowledge in user_contributions:
                         knowledge_id, title, content, keywords, knowledge_type, view_count, created_at = knowledge
-                        st.markdown(f"- **{title}** ({knowledge_type} | 조회수: {view_count}회 | {created_at.strftime('%Y-%m-%d')})")
+                        # 클릭 가능한 업무 지식 항목
+                        if st.button(f"📄 {title} ({knowledge_type} | 조회수: {view_count}회)", 
+                                   key=f"knowledge_{knowledge_id}", 
+                                   help="클릭하여 상세보기로 이동"):
+                            st.session_state.current_page = "🔍 업무 지식 조회"
+                            st.session_state.selected_knowledge_id = knowledge_id
+                            st.rerun()
                 else:
                     st.info("아직 등록한 업무 지식이 없습니다.")
             except Exception as e:
@@ -1278,7 +1289,7 @@ elif page == "👤 나의 정보":
                 
                 # 최근 질문들
                 cursor.execute("""
-                    SELECT title, created_at 
+                    SELECT id, title, created_at 
                     FROM qna_board 
                     WHERE questioner_id = %s 
                     ORDER BY created_at DESC LIMIT 5
@@ -1296,8 +1307,15 @@ elif page == "👤 나의 정보":
                 
                 if recent_questions:
                     st.markdown("### 📝 최근 등록한 질문")
-                    for question_title, created_at in recent_questions:
-                        st.markdown(f"- **{question_title}** ({created_at.strftime('%Y-%m-%d')})")
+                    for question_id, question_title, created_at in recent_questions:
+                        # 클릭 가능한 질문 항목
+                        if st.button(f"❓ {question_title} ({created_at.strftime('%Y-%m-%d')})", 
+                                   key=f"question_{question_id}", 
+                                   help="클릭하여 질문 상세보기로 이동"):
+                            st.session_state.current_page = "❓ QnA 게시판"
+                            st.session_state.qna_selected_question = question_id
+                            st.session_state.selected_question_id = question_id
+                            st.rerun()
                 else:
                     st.info("아직 등록한 질문이 없습니다.")
                     
@@ -1423,43 +1441,34 @@ elif st.session_state.current_page == "QnA 질문 상세":
             # 질문 제목과 내용을 명확하게 표시
             st.markdown("### 📋 질문 상세")
             
-            # 질문 제목과 수정/삭제 버튼
-            col1, col2 = st.columns([6, 1])
-            with col1:
-                st.markdown(f"""
-                <div class="issue-card" style="margin: 15px 0;">
-                    <div class="issue-title" style="font-size: 20px; font-weight: 700; color: #1f2937; margin-bottom: 15px;">
-                        {title}
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-            
             # 현재 사용자가 질문 작성자인지 확인
             current_user = st.session_state.get('current_user', None)
             is_question_author = current_user and len(current_user) > 0 and current_user[0] == questioner_id
             
-            with col2:
-                if is_question_author:
-                    if st.button("⚙️ 관리", key="question_manage"):
-                        st.session_state['show_question_edit'] = not st.session_state.get('show_question_edit', False)
-                        st.rerun()
-            
-            # 질문 수정/삭제 옵션
-            if is_question_author and st.session_state.get('show_question_edit', False):
-                col1, col2 = st.columns(2)
+            # 수정/삭제 버튼을 좌측에 배치
+            if is_question_author:
+                col1, col2, col3 = st.columns([1, 1, 6])
                 with col1:
-                    if st.button("✏️ 질문 수정", key="edit_question"):
+                    if st.button("✏️ 수정", key="edit_question", use_container_width=True):
                         st.session_state['editing_question'] = True
-                        st.session_state['show_question_edit'] = False
                         st.rerun()
                 with col2:
-                    if st.button("🗑️ 질문 삭제", key="delete_question"):
+                    if st.button("🗑️ 삭제", key="delete_question", use_container_width=True):
                         if st.session_state.db_manager.delete_qna_question(question_id, current_user[0]):
                             st.success("질문이 삭제되었습니다.")
                             st.session_state.qna_selected_question = None
                             st.rerun()
                         else:
                             st.error("질문 삭제에 실패했습니다.")
+            
+            # 질문 제목 표시
+            st.markdown(f"""
+            <div class="issue-card" style="margin: 15px 0;">
+                <div class="issue-title" style="font-size: 20px; font-weight: 700; color: #1f2937; margin-bottom: 15px;">
+                    {title}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             
             # 질문 수정 폼
             if is_question_author and st.session_state.get('editing_question', False):
