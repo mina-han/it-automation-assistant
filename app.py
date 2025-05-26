@@ -508,6 +508,21 @@ if page == "💬 대화하기":
                             if st.button("❌ 아니오", key=f"qna_no_{len(st.session_state.chat_history)}"):
                                 st.info("💬 다른 질문을 시도해보시거나 업무 지식 등록을 통해 정보를 추가해보세요!")
                     
+                    # Check if response contains knowledge registration suggestion
+                    if "새로운 업무 지식 등록 제안" in response:
+                        st.markdown("---")
+                        col1, col2 = st.columns([1, 1])
+                        with col1:
+                            if st.button("✅ 예", key=f"knowledge_yes_{len(st.session_state.chat_history)}"):
+                                # 업무 지식 등록 페이지로 이동
+                                st.session_state.current_page = "📝 업무 지식 등록"
+                                st.session_state.suggested_title = user_input[:50] + ('...' if len(user_input) > 50 else '')
+                                st.session_state.suggested_content = response
+                                st.rerun()
+                        with col2:
+                            if st.button("❌ 아니오", key=f"knowledge_no_{len(st.session_state.chat_history)}"):
+                                st.info("💭 나중에 필요하시면 언제든 업무 지식 등록 페이지를 이용해주세요!")
+                    
                     st.session_state.chat_history.append((user_input, response))
                     st.rerun()
     
@@ -539,10 +554,10 @@ elif page == "📝 업무 지식 등록":
         
         submitted = st.form_submit_button("등록", type="primary")
         
-        if submitted and title and content:
+        if submitted and title:
             with st.spinner("업무 지식을 등록하고 있습니다..."):
                 # 파일에서 텍스트 추출하여 내용에 추가
-                final_content = content
+                final_content = content if content else ""
                 if uploaded_file is not None:
                     st.info(f"📎 파일 '{uploaded_file.name}' 처리 중...")
                     extracted_text, success = extract_text_from_file(uploaded_file)
@@ -626,8 +641,12 @@ elif page == "🔍 업무 지식 조회":
         for knowledge in knowledge_list:
             knowledge_id, title, content, keywords_str, knowledge_type, view_count, created_at = knowledge
             
-            # Create modern knowledge card
+            # Create modern knowledge card with edit/delete options
             preview = content[:100] + "..." if len(content) > 100 else content
+            
+            # Check if current user is the author
+            current_user = st.session_state.get('current_user', None)
+            user_id = current_user[0] if current_user and len(current_user) > 0 else None
             
             # Knowledge type badge color
             type_color = "#4CAF50" if knowledge_type == "메뉴얼" else "#2196F3"
@@ -671,7 +690,87 @@ elif page == "🔍 업무 지식 조회":
                     
                     # Show full knowledge details in a modal-like container
                     st.markdown("---")
-                    st.markdown(f"### 📋 {title}")
+                    
+                    # Title with edit/delete buttons if user is author
+                    col1, col2 = st.columns([4, 1])
+                    with col1:
+                        st.markdown(f"### 📋 {title}")
+                    
+                    # Check if user is the author of this knowledge
+                    try:
+                        conn = st.session_state.db_manager.get_connection()
+                        cursor = conn.cursor()
+                        cursor.execute("SELECT user_id FROM work_knowledge WHERE id = %s", (knowledge_id,))
+                        result = cursor.fetchone()
+                        knowledge_author_id = result[0] if result else None
+                        cursor.close()
+                        conn.close()
+                        
+                        is_author = user_id and knowledge_author_id and user_id == knowledge_author_id
+                        
+                        with col2:
+                            if is_author:
+                                if st.button("⚙️ 관리", key=f"manage_knowledge_{knowledge_id}"):
+                                    st.session_state[f'show_knowledge_edit_{knowledge_id}'] = not st.session_state.get(f'show_knowledge_edit_{knowledge_id}', False)
+                                    st.rerun()
+                    except Exception as e:
+                        is_author = False
+                    
+                    # Edit/Delete options
+                    if is_author and st.session_state.get(f'show_knowledge_edit_{knowledge_id}', False):
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.button("✏️ 수정", key=f"edit_knowledge_{knowledge_id}"):
+                                st.session_state[f'editing_knowledge_{knowledge_id}'] = True
+                                st.session_state[f'show_knowledge_edit_{knowledge_id}'] = False
+                                st.rerun()
+                        with col2:
+                            if st.button("🗑️ 삭제", key=f"delete_knowledge_{knowledge_id}"):
+                                try:
+                                    conn = st.session_state.db_manager.get_connection()
+                                    cursor = conn.cursor()
+                                    cursor.execute("DELETE FROM work_knowledge WHERE id = %s AND user_id = %s", (knowledge_id, user_id))
+                                    conn.commit()
+                                    cursor.close()
+                                    conn.close()
+                                    st.success("업무 지식이 삭제되었습니다.")
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error("삭제 중 오류가 발생했습니다.")
+                    
+                    # Edit form
+                    if is_author and st.session_state.get(f'editing_knowledge_{knowledge_id}', False):
+                        st.markdown("### ✏️ 업무 지식 수정")
+                        with st.form(f"edit_knowledge_form_{knowledge_id}"):
+                            edited_title = st.text_input("제목", value=title)
+                            edited_content = st.text_area("내용", value=content, height=200)
+                            edited_type = st.selectbox("구분 타입", ["이슈", "메뉴얼"], 
+                                index=0 if knowledge_type == "이슈" else 1)
+                            
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                if st.form_submit_button("💾 저장"):
+                                    try:
+                                        conn = st.session_state.db_manager.get_connection()
+                                        cursor = conn.cursor()
+                                        cursor.execute("""
+                                            UPDATE work_knowledge 
+                                            SET title = %s, content = %s, knowledge_type = %s, updated_at = NOW()
+                                            WHERE id = %s AND user_id = %s
+                                        """, (edited_title, edited_content, edited_type, knowledge_id, user_id))
+                                        conn.commit()
+                                        cursor.close()
+                                        conn.close()
+                                        st.success("업무 지식이 수정되었습니다.")
+                                        st.session_state[f'editing_knowledge_{knowledge_id}'] = False
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error("수정 중 오류가 발생했습니다.")
+                            with col2:
+                                if st.form_submit_button("❌ 취소"):
+                                    st.session_state[f'editing_knowledge_{knowledge_id}'] = False
+                                    st.rerun()
+                    
                     st.markdown(f"**구분:** {knowledge_type}")
                     st.markdown(f"**전체 내용:**")
                     st.markdown(content)

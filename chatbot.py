@@ -105,8 +105,7 @@ class ChatBot:
                 
                 bot_response += f"\n\n💡 **새로운 업무 지식 등록 제안**\n"
                 bot_response += f"{reason}\n"
-                bot_response += f"이 내용을 {'이슈' if suggestion_type == 'issue' else '매뉴얼'} 업무 지식으로 등록하시겠습니까?\n"
-                bot_response += f"업무 지식 등록 페이지에서 상세한 해결 과정을 기록해주세요!"
+                bot_response += f"이 내용을 {'이슈' if suggestion_type == 'issue' else '매뉴얼'} 업무 지식으로 등록하시겠습니까?\n\n"
             
             # Save chat interaction to database
             try:
