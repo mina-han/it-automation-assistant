@@ -581,12 +581,52 @@ elif page == "📝 업무 지식 등록":
                         # 추출된 텍스트를 정리하여 추가
                         cleaned_text = extracted_text.strip()
                         if cleaned_text:
-                            final_content += f"\n\n--- 첨부 파일 '{uploaded_file.name}'에서 추출된 내용 ---\n{cleaned_text}"
-                            st.success(f"✅ 파일에서 텍스트가 성공적으로 추출되어 추가되었습니다!")
+                            # 텍스트 파일인 경우 내용을 요약하고 제목 생성
+                            if uploaded_file.name.lower().endswith('.txt'):
+                                try:
+                                    from utils import summarize_text, extract_keywords
+                                    
+                                    st.info("📝 텍스트 파일 내용을 요약하고 제목을 생성하는 중...")
+                                    
+                                    # 내용 요약
+                                    summarized_content = summarize_text(cleaned_text, max_length=500)
+                                    
+                                    # 제목 생성
+                                    title_keywords = extract_keywords(cleaned_text, max_keywords=3)
+                                    if title_keywords:
+                                        auto_title = f"{' '.join(title_keywords[:2])} 관련 업무 가이드"
+                                    else:
+                                        auto_title = f"{uploaded_file.name.replace('.txt', '')} 업무 가이드"
+                                    
+                                    # 제목이 비어있으면 자동 생성된 제목 사용
+                                    if not title.strip():
+                                        final_title = auto_title
+                                        st.info(f"📋 자동 생성된 제목: {auto_title}")
+                                    else:
+                                        final_title = title
+                                    
+                                    # 요약된 내용 사용
+                                    final_content = summarized_content
+                                    st.success(f"✅ 텍스트 파일이 요약되어 등록됩니다!")
+                                    st.markdown(f"**요약된 내용 미리보기:**\n{summarized_content[:200]}...")
+                                    
+                                except Exception as e:
+                                    # 요약 실패 시 원본 텍스트 사용
+                                    st.warning("⚠️ 텍스트 요약에 실패했습니다. 원본 내용을 사용합니다.")
+                                    final_content += f"\n\n--- 첨부 파일 '{uploaded_file.name}'에서 추출된 내용 ---\n{cleaned_text}"
+                            else:
+                                # 다른 파일 형식은 기존 방식 사용
+                                final_content += f"\n\n--- 첨부 파일 '{uploaded_file.name}'에서 추출된 내용 ---\n{cleaned_text}"
+                                st.success(f"✅ 파일에서 텍스트가 성공적으로 추출되어 추가되었습니다!")
+                                final_title = title
                         else:
                             st.warning("⚠️ 파일에서 텍스트를 추출할 수 없었습니다.")
+                            final_title = title
                     else:
                         st.error(f"❌ 파일 처리 중 오류가 발생했습니다: {extracted_text}")
+                        final_title = title
+                else:
+                    final_title = title
                 
                 # Extract keywords and create summary
                 keywords = extract_keywords(final_content)
@@ -595,16 +635,16 @@ elif page == "📝 업무 지식 등록":
                 # Save to database with user ID for points
                 user = st.session_state.current_user
                 user_id = user[0] if user and isinstance(user, (list, tuple)) and len(user) > 0 else None
-                knowledge_id = st.session_state.db_manager.add_knowledge(title, final_content, keywords, knowledge_type, user_id)
+                knowledge_id = st.session_state.db_manager.add_knowledge(final_title, final_content, keywords, knowledge_type, user_id)
                 
                 # Update RAG embeddings
-                st.session_state.rag_engine.add_document(knowledge_id, title, final_content)
+                st.session_state.rag_engine.add_document(knowledge_id, final_title, final_content)
                 
                 # Display success card
                 st.success("✅ 업무 지식이 성공적으로 등록되었습니다!")
                 
                 st.markdown('<div class="issue-card">', unsafe_allow_html=True)
-                st.markdown(f'<div class="issue-title">{title}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="issue-title">{final_title}</div>', unsafe_allow_html=True)
                 st.markdown(f"**구분:** {knowledge_type}")
                 st.markdown(f"**요약:** {summary}")
                 st.markdown(f'<div class="issue-keywords">키워드: {" ".join([f"#{kw}" for kw in keywords])}</div>', unsafe_allow_html=True)
