@@ -42,8 +42,11 @@ class ChatBot:
     def get_response_with_context(self, user_message: str, conversation_context: list) -> str:
         """Generate response for user message using RAG, LLM and conversation context"""
         try:
-            # Get relevant context from RAG engine
+            # Get relevant context from RAG engine (업무 지식 기반 검색)
             context, related_issues = self.rag_engine.get_context_for_query(user_message)
+            
+            # Check if this is a new knowledge that should be registered
+            registration_analysis = self._should_suggest_knowledge_registration(user_message, related_issues)
             
             # Prepare the conversation context with stronger emphasis on stored knowledge
             if related_issues:
@@ -94,6 +97,16 @@ class ChatBot:
                 bot_response += f"\n\n📚 **관련 유사 이슈들:**\n"
                 for issue in related_issues[:3]:  # Show top 3
                     bot_response += f"• {issue['title']} (유사도: {issue['similarity']:.0%})\n"
+            
+            # Add knowledge registration suggestion if needed
+            if registration_analysis.get("should_suggest", False):
+                suggestion_type = registration_analysis.get("type", "issue")
+                reason = registration_analysis.get("reason", "")
+                
+                bot_response += f"\n\n💡 **새로운 업무 지식 등록 제안**\n"
+                bot_response += f"{reason}\n"
+                bot_response += f"이 내용을 {'이슈' if suggestion_type == 'issue' else '매뉴얼'} 업무 지식으로 등록하시겠습니까?\n"
+                bot_response += f"업무 지식 등록 페이지에서 상세한 해결 과정을 기록해주세요!"
             
             # Save chat interaction to database
             try:
@@ -171,6 +184,44 @@ class ChatBot:
                 "시스템 장애 발생시 대응 절차는?",
                 "모니터링 도구 설정 방법은?"
             ]
+    
+    def _should_suggest_knowledge_registration(self, user_message: str, related_issues: List) -> Dict[str, Any]:
+        """업무 지식을 기반으로 새로운 지식 등록이 필요한지 판단"""
+        try:
+            # 관련된 업무 지식이 충분히 있으면 등록 제안하지 않음
+            if related_issues and len(related_issues) > 0:
+                # 유사도가 높은 지식이 있는지 확인
+                high_similarity_count = sum(1 for issue in related_issues if len(issue) > 3 and issue[3] > 0.7)
+                if high_similarity_count > 0:
+                    return {"should_suggest": False, "reason": "similar_knowledge_exists"}
+            
+            # 이슈/장애 관련 키워드 검사
+            issue_keywords = ["오류", "에러", "문제", "장애", "실패", "안됨", "작동하지", "연결", "접속", "느림", "지연"]
+            manual_keywords = ["방법", "설정", "설치", "절차", "가이드", "매뉴얼", "어떻게", "구성", "배포"]
+            
+            message_lower = user_message.lower()
+            
+            has_issue_keywords = any(keyword in message_lower for keyword in issue_keywords)
+            has_manual_keywords = any(keyword in message_lower for keyword in manual_keywords)
+            
+            if has_issue_keywords:
+                return {
+                    "should_suggest": True,
+                    "type": "issue",
+                    "reason": "새로운 이슈로 보이며, 관련 업무 지식이 충분하지 않습니다."
+                }
+            elif has_manual_keywords:
+                return {
+                    "should_suggest": True,
+                    "type": "manual",
+                    "reason": "새로운 매뉴얼이 필요한 내용으로 보입니다."
+                }
+            
+            return {"should_suggest": False, "reason": "general_question"}
+            
+        except Exception as e:
+            logger.error(f"Failed to analyze knowledge registration need: {e}")
+            return {"should_suggest": False, "reason": "analysis_failed"}
     
     def analyze_user_intent(self, message: str) -> Dict[str, Any]:
         """Analyze user intent and extract key information"""

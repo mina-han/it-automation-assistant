@@ -544,12 +544,18 @@ elif page == "📝 업무 지식 등록":
                 # 파일에서 텍스트 추출하여 내용에 추가
                 final_content = content
                 if uploaded_file is not None:
+                    st.info(f"📎 파일 '{uploaded_file.name}' 처리 중...")
                     extracted_text, success = extract_text_from_file(uploaded_file)
                     if success:
-                        final_content += f"\n\n--- 첨부 파일에서 추출된 내용 ---\n{extracted_text}"
-                        st.info(f"📎 파일 '{uploaded_file.name}'에서 텍스트가 추출되어 내용에 추가되었습니다.")
+                        # 추출된 텍스트를 정리하여 추가
+                        cleaned_text = extracted_text.strip()
+                        if cleaned_text:
+                            final_content += f"\n\n--- 첨부 파일 '{uploaded_file.name}'에서 추출된 내용 ---\n{cleaned_text}"
+                            st.success(f"✅ 파일에서 텍스트가 성공적으로 추출되어 추가되었습니다!")
+                        else:
+                            st.warning("⚠️ 파일에서 텍스트를 추출할 수 없었습니다.")
                     else:
-                        st.warning(f"⚠️ 파일 처리 중 문제가 발생했습니다: {extracted_text}")
+                        st.error(f"❌ 파일 처리 중 오류가 발생했습니다: {extracted_text}")
                 
                 # Extract keywords and create summary
                 keywords = extract_keywords(final_content)
@@ -961,12 +967,18 @@ elif page == "❓ QnA 게시판":
                     # 파일에서 텍스트 추출하여 질문 내용에 추가
                     final_content = question_content
                     if uploaded_file is not None:
+                        st.info(f"📎 파일 '{uploaded_file.name}' 처리 중...")
                         extracted_text, success = extract_text_from_file(uploaded_file)
                         if success:
-                            final_content += f"\n\n--- 첨부 파일에서 추출된 내용 ---\n{extracted_text}"
-                            st.info(f"📎 파일 '{uploaded_file.name}'에서 텍스트가 추출되어 질문 내용에 추가되었습니다.")
+                            # 추출된 텍스트를 정리하여 추가
+                            cleaned_text = extracted_text.strip()
+                            if cleaned_text:
+                                final_content += f"\n\n--- 첨부 파일 '{uploaded_file.name}'에서 추출된 내용 ---\n{cleaned_text}"
+                                st.success(f"✅ 파일에서 텍스트가 성공적으로 추출되어 추가되었습니다!")
+                            else:
+                                st.warning("⚠️ 파일에서 텍스트를 추출할 수 없었습니다.")
                         else:
-                            st.warning(f"⚠️ 파일 처리 중 문제가 발생했습니다: {extracted_text}")
+                            st.error(f"❌ 파일 처리 중 오류가 발생했습니다: {extracted_text}")
                     
                     user = st.session_state.current_user
                     user_id = user[0] if user and isinstance(user, (list, tuple)) and len(user) > 0 else None
