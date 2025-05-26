@@ -2,6 +2,8 @@ import streamlit as st
 import base64
 import io
 import re
+import csv
+import pandas as pd
 from typing import Optional, Tuple
 
 def extract_text_from_file(uploaded_file) -> Tuple[str, bool]:
@@ -50,6 +52,46 @@ def extract_text_from_file(uploaded_file) -> Tuple[str, bool]:
             # 이미지 파일 처리 (OCR 없이는 텍스트 추출 불가)
             return "이미지 파일의 텍스트 추출을 위해서는 OCR 라이브러리가 필요합니다. 수동으로 텍스트를 입력해주세요.", False
             
+        elif file_extension == '.csv':
+            # CSV 파일 처리
+            try:
+                # 파일 내용을 읽어서 pandas DataFrame으로 변환
+                content = uploaded_file.getvalue().decode('utf-8')
+                from io import StringIO
+                df = pd.read_csv(StringIO(content))
+                
+                # 표 형식으로 정리된 텍스트 생성
+                formatted_text = f"총 {len(df)} 개의 데이터 항목이 있습니다.\n\n"
+                formatted_text += f"컬럼 정보: {', '.join(df.columns.tolist())}\n\n"
+                
+                # 각 행을 구조화된 텍스트로 변환
+                for idx, row in df.iterrows():
+                    formatted_text += f"=== 데이터 {idx + 1} ===\n"
+                    for col in df.columns:
+                        formatted_text += f"{col}: {row[col]}\n"
+                    formatted_text += "\n"
+                
+                return formatted_text, True
+            except Exception as e:
+                try:
+                    # 인코딩 문제일 수 있으므로 다른 인코딩으로 시도
+                    content = uploaded_file.getvalue().decode('cp949')
+                    from io import StringIO
+                    df = pd.read_csv(StringIO(content))
+                    
+                    formatted_text = f"총 {len(df)} 개의 데이터 항목이 있습니다.\n\n"
+                    formatted_text += f"컬럼 정보: {', '.join(df.columns.tolist())}\n\n"
+                    
+                    for idx, row in df.iterrows():
+                        formatted_text += f"=== 데이터 {idx + 1} ===\n"
+                        for col in df.columns:
+                            formatted_text += f"{col}: {row[col]}\n"
+                        formatted_text += "\n"
+                    
+                    return formatted_text, True
+                except Exception:
+                    return f"CSV 파일 처리 중 오류가 발생했습니다: {str(e)}", False
+        
         elif file_extension in ['doc', 'docx']:
             # Word 파일 처리
             try:

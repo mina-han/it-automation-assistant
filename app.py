@@ -564,8 +564,8 @@ elif page == "📝 업무 지식 등록":
         st.markdown("#### 📎 파일 첨부 (선택사항)")
         uploaded_file = st.file_uploader(
             "파일을 첨부하면 텍스트를 자동으로 추출하여 내용에 추가됩니다",
-            type=['txt', 'pdf', 'xlsx', 'xls', 'docx', 'doc', 'jpg', 'jpeg', 'png'],
-            help="지원 파일: 텍스트(.txt), PDF(.pdf), Excel(.xlsx, .xls), Word(.docx, .doc), 이미지(.jpg, .png)"
+            type=['txt', 'pdf', 'xlsx', 'xls', 'docx', 'doc', 'csv', 'jpg', 'jpeg', 'png'],
+            help="지원 파일: 텍스트(.txt), PDF(.pdf), Excel(.xlsx, .xls), Word(.docx, .doc), CSV(.csv), 이미지(.jpg, .png)"
         )
         
         submitted = st.form_submit_button("등록", type="primary")
@@ -581,8 +581,8 @@ elif page == "📝 업무 지식 등록":
                         # 추출된 텍스트를 정리하여 추가
                         cleaned_text = extracted_text.strip()
                         if cleaned_text:
-                            # 텍스트 파일인 경우 내용을 요약하고 제목 생성
-                            if uploaded_file.name.lower().endswith('.txt'):
+                            # 텍스트 파일이나 CSV 파일인 경우 내용을 요약하고 제목 생성
+                            if uploaded_file.name.lower().endswith(('.txt', '.csv')):
                                 try:
                                     from utils import summarize_text, extract_keywords
                                     
@@ -591,12 +591,18 @@ elif page == "📝 업무 지식 등록":
                                     # 내용 요약
                                     summarized_content = summarize_text(cleaned_text, max_length=500)
                                     
-                                    # 제목 생성
-                                    title_keywords = extract_keywords(cleaned_text, max_keywords=3)
-                                    if title_keywords:
-                                        auto_title = f"{' '.join(title_keywords[:2])} 관련 업무 가이드"
+                                    # 제목 생성 (파일 형식에 따라 다르게)
+                                    if uploaded_file.name.lower().endswith('.csv'):
+                                        # CSV 파일의 경우 파일명 기반 제목 생성
+                                        base_name = uploaded_file.name.replace('.csv', '').replace('_', ' ')
+                                        auto_title = f"{base_name} 데이터베이스 목록"
                                     else:
-                                        auto_title = f"{uploaded_file.name.replace('.txt', '')} 업무 가이드"
+                                        # 텍스트 파일의 경우 키워드 기반 제목 생성
+                                        title_keywords = extract_keywords(cleaned_text, max_keywords=3)
+                                        if title_keywords:
+                                            auto_title = f"{' '.join(title_keywords[:2])} 관련 업무 가이드"
+                                        else:
+                                            auto_title = f"{uploaded_file.name.replace('.txt', '')} 업무 가이드"
                                     
                                     # 제목이 비어있으면 자동 생성된 제목 사용
                                     if not title.strip():
