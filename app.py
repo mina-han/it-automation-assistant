@@ -5,6 +5,7 @@ from chatbot import ChatBot
 from rag_engine_simple import RAGEngine
 from utils import extract_keywords, summarize_text
 from file_processor import extract_text_from_file, get_file_info
+from like_functions import add_like_functions_to_db_manager
 import os
 
 # Page configuration
@@ -189,6 +190,8 @@ st.markdown("""
 if 'db_manager' not in st.session_state:
     st.session_state.db_manager = DatabaseManager()
     st.session_state.db_manager.init_database()
+    # Add like functions to database manager
+    st.session_state.db_manager = add_like_functions_to_db_manager(st.session_state.db_manager)
 
 if 'rag_engine' not in st.session_state:
     st.session_state.rag_engine = RAGEngine(st.session_state.db_manager)
@@ -1606,15 +1609,45 @@ elif st.session_state.current_page == "QnA 질문 상세":
                     
                     # 답변 카드
                     with st.container():
-                        st.markdown(f"""
-                        <div class="issue-card" style="margin: 15px 0;">
-                            <div style="color: #333; margin: 0 0 15px 0; line-height: 1.6; 
-                                        font-size: 15px; white-space: pre-wrap;">{answer_content}</div>
-                            <div style="color: #666; font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
-                                <span><strong>답변자:</strong> {answerer_name} ({answerer_department}) | {answer_created_at.strftime('%Y-%m-%d %H:%M')}</span>
+                        # 좋아요 정보 가져오기
+                        likes_count = st.session_state.db_manager.get_answer_likes_count(answer_id)
+                        user_liked = False
+                        if current_user and len(current_user) > 0:
+                            user_liked = st.session_state.db_manager.check_user_liked_answer(answer_id, current_user[0])
+                        
+                        # 답변 카드 헤더 (좋아요 버튼 포함)
+                        col1, col2 = st.columns([9, 1])
+                        with col1:
+                            st.markdown(f"""
+                            <div class="issue-card" style="margin: 15px 0;">
+                                <div style="color: #333; margin: 0 0 15px 0; line-height: 1.6; 
+                                            font-size: 15px; white-space: pre-wrap;">{answer_content}</div>
+                                <div style="color: #666; font-size: 14px;">
+                                    <span><strong>답변자:</strong> {answerer_name} ({answerer_department}) | {answer_created_at.strftime('%Y-%m-%d %H:%M')}</span>
+                                </div>
                             </div>
-                        </div>
-                        """, unsafe_allow_html=True)
+                            """, unsafe_allow_html=True)
+                        with col2:
+                            # 좋아요 버튼
+                            if current_user:
+                                like_button_text = f"👍 {likes_count}" if likes_count > 0 else "👍"
+                                button_type = "primary" if user_liked else "secondary"
+                                if st.button(like_button_text, key=f"like_answer_{answer_id}", type=button_type):
+                                    # 좋아요 토글
+                                    success, new_likes_count = st.session_state.db_manager.toggle_answer_like(answer_id, current_user[0])
+                                    if success:
+                                        if new_likes_count >= 2 and not user_liked:
+                                            st.success(f"👍 좋아요! ({new_likes_count}개) - 좋아요 2개 이상으로 업무 지식에 자동 등록되었습니다! 🎉")
+                                        else:
+                                            action = "좋아요!" if not user_liked else "좋아요 취소"
+                                            st.success(f"👍 {action} ({new_likes_count}개)")
+                                        st.rerun()
+                                    else:
+                                        st.error("좋아요 처리 중 오류가 발생했습니다.")
+                            else:
+                                # 로그인하지 않은 사용자에게는 좋아요 개수만 표시
+                                if likes_count > 0:
+                                    st.markdown(f"**👍 {likes_count}**")
                         
                         # 수정/삭제 버튼 (본인 답변만)
                         if is_answer_author:
