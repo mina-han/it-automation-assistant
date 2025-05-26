@@ -487,35 +487,45 @@ if page == "💬 대화하기":
                         st.session_state.conversation_context = st.session_state.conversation_context[-5:]
                     
                     # 답변이 없을 때 QnA 등록 제안
-                    if response == "SUGGEST_QNA_REGISTRATION":
-                        # QnA 등록 제안은 대화 내역에 저장하지 않음
+                    if "|SUGGEST_QNA_REGISTRATION" in response:
+                        # 응답을 메시지와 제안으로 분리
+                        base_message = response.split("|SUGGEST_QNA_REGISTRATION")[0]
+                        
+                        # 기본 메시지를 대화 내역에 추가
+                        st.session_state.chat_history.append((user_input, base_message))
+                        
+                        # 데이터베이스에 저장
+                        user = st.session_state.current_user
+                        user_id = user[0] if user and isinstance(user, (list, tuple)) and len(user) > 0 else None
+                        try:
+                            st.session_state.db_manager.save_chat_history(user_input, base_message, user_id=user_id)
+                        except Exception as e:
+                            st.error(f"대화 저장 중 오류가 발생했습니다: {e}")
+                        
+                        # QnA 등록 제안 UI 표시
                         st.markdown("---")
-                        st.markdown("### 💡 이 이슈(혹은 메뉴얼)에 대해 QnA 게시판의 질문으로 새로 등록하시겠습니까?")
-                        st.markdown("현재 저장된 업무 지식에 없는 내용입니다. QnA 게시판에 질문으로 등록하여 다른 동료들의 도움을 받아보세요!")
+                        st.markdown("### 💡 해당 질문을 QnA 게시판에 등록할까요?")
+                        st.markdown("다른 동료들이 이 질문에 답변해줄 수 있습니다!")
                         
                         col1, col2 = st.columns([1, 1])
                         with col1:
-                            if st.button("✅ 예", key=f"qna_yes_{len(st.session_state.chat_history)}"):
-                                # QnA 질문으로 자동 등록
-                                user = st.session_state.get('current_user', None)
-                                if user and isinstance(user, (list, tuple)) and len(user) > 0:
-                                    user_id = user[0]
-                                    question_title = f"{user_input[:50]}{'...' if len(user_input) > 50 else ''}"
-                                    question_id = st.session_state.db_manager.add_qna_question(
-                                        question_title, user_input, "데이터베이스", "issue", user_id
+                            if st.button("✅ 예", key=f"qna_register_yes_{len(st.session_state.chat_history)}", type="primary"):
+                                # QnA 게시판에 질문 등록
+                                if user_id:
+                                    question_id = st.session_state.db_manager.add_qna_question_from_chat(
+                                        user_input, user_id
                                     )
                                     if question_id:
-                                        st.success("✅ QnA 게시판에 질문이 등록되었습니다! (+2 경험치)")
-                                        st.info("🎯 QnA 게시판에서 등록된 질문을 확인하세요!")
-                                        st.session_state.current_page = "❓ QnA 게시판"
-                                        st.rerun()
+                                        st.success(f"✅ 질문이 QnA 게시판에 등록되었습니다! (질문 ID: {question_id})")
+                                        st.info("🎉 질문 등록으로 2점의 경험치를 획득했습니다!")
                                     else:
                                         st.error("❌ 질문 등록 중 오류가 발생했습니다.")
                                 else:
                                     st.error("❌ 로그인이 필요합니다.")
+                                st.rerun()
                         with col2:
-                            if st.button("❌ 아니오", key=f"qna_no_{len(st.session_state.chat_history)}"):
-                                st.info("💬 다른 질문을 시도해보시거나 업무 지식 등록을 통해 정보를 추가해보세요!")
+                            if st.button("❌ 아니요", key=f"qna_register_no_{len(st.session_state.chat_history)}"):
+                                st.rerun()
                     else:
                         # 정상 응답일 때만 대화 내역에 저장
                         try:

@@ -556,6 +556,33 @@ class DatabaseManager:
             return False
     
     # QnA Board functions
+    def add_qna_question_from_chat(self, question_text, questioner_id):
+        """Add QnA question from chat suggestion with default values"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            kst_now = self._get_kst_now()
+            
+            cursor.execute("""
+                INSERT INTO qna_board (title, question, category, question_type, questioner_id, status, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
+            """, (question_text, question_text, "기타", "이슈", questioner_id, "대기중", kst_now))
+            
+            question_id = cursor.fetchone()[0]
+            
+            # Award 2 points for asking a question
+            self.update_user_experience(questioner_id, 2)
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            logger.info(f"QnA question from chat added successfully with ID: {question_id}")
+            return question_id
+        except Exception as e:
+            logger.error(f"Failed to add QnA question from chat: {e}")
+            return None
+
     def add_qna_question(self, title, question, category, question_type, questioner_id):
         """Add new QnA question and award points"""
         try:

@@ -62,7 +62,7 @@ class ChatBot:
 """
             else:
                 # No relevant knowledge found - should suggest QnA registration
-                return "SUGGEST_QNA_REGISTRATION"
+                return "현재 저장된 업무 지식에는 해당 해결 방법이 포함되어 있지 않습니다.|SUGGEST_QNA_REGISTRATION"
             
             # Prepare messages for OpenAI API with conversation history
             messages = [{"role": "system", "content": self.system_prompt}]
